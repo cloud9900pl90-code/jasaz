@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>استقرار خودکار ورکر و دیتابیس کلودفلر</title>
+  <title>نصب‌کننده ورکر و دیتابیس کلودفلر | Jasaz</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -18,11 +18,19 @@
     
     <!-- سربرگ -->
     <div class="p-6 border-b border-slate-800 bg-slate-900/50">
-      <div class="flex items-center justify-between mb-4">
+      <div class="flex items-center justify-between mb-2">
         <h1 class="text-xl font-bold text-orange-400 flex items-center gap-2">
           <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM19 18H6c-2.21 0-4-1.79-4-4 0-2.05 1.53-3.76 3.56-3.97l1.07-.11.5-.95C8.08 7.14 9.94 6 12 6c2.62 0 4.88 1.86 5.39 4.43l.3 1.5 1.53.11c1.56.1 2.78 1.41 2.78 2.96 0 1.65-1.35 3-3 3z"/></svg>
-          نصب و راه‌اندازی کلودفلر ورکر
+          نصب‌کننده خودکار ورکر کلودفلر
         </h1>
+        <a href="https://github.com/itsyebekhe/jasaz" target="_blank" rel="noopener noreferrer" class="text-xs text-slate-400 hover:text-white flex items-center gap-1 bg-slate-800 border border-slate-700 px-2.5 py-1 rounded-lg transition">
+          <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+          <span>jasaz</span>
+        </a>
+      </div>
+
+      <div class="flex items-center justify-between mt-4 mb-2">
+        <span class="text-xs text-slate-400">پیشرفت راه‌اندازی:</span>
         <span id="stepBadge" class="text-xs bg-orange-500/10 text-orange-400 border border-orange-500/20 px-3 py-1 rounded-full font-semibold">مرحله ۱ از ۴</span>
       </div>
 
@@ -40,52 +48,60 @@
 
       <!-- مرحله ۱: احراز هویت -->
       <div id="step-1" class="space-y-4">
-        <h2 class="text-md font-semibold text-slate-200">گام ۱: مشخصات حساب کاربری</h2>
+        <h2 class="text-md font-semibold text-slate-200">گام ۱: مشخصات حساب و توکن کلودفلر</h2>
         
+        <!-- Account ID -->
         <div>
           <label class="block text-xs font-medium text-slate-400 mb-1">Account ID کلودفلر *</label>
-          <input type="text" id="accountId" dir="ltr" required placeholder="شناسه ۳۲ حرفی اکانت شما" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm focus:border-orange-500 focus:outline-none text-left" />
-          <p class="text-[11px] text-slate-500 mt-1">از ستون راست داشبورد اصلی کلودفلر قابل کپی است.</p>
+          <input type="text" id="accountId" dir="ltr" required placeholder="مثلاً 1a2b3c4d5e6f..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm focus:border-orange-500 focus:outline-none text-left" />
+          <div class="mt-2 bg-slate-950/70 border border-slate-800/80 rounded-lg p-2.5 text-[11px] text-slate-400 leading-relaxed">
+            <span class="text-orange-400 font-semibold">نحوه پیدا کردن Account ID:</span>
+            وارد داشبورد کلودفلر و بخش <span class="text-slate-200">Workers & Pages</span> شوید؛ در نوار آدرس مرورگر (URL)، بخش بین نشانی را کپی کنید:
+            <div dir="ltr" class="mt-1 p-1 bg-slate-900 border border-slate-800 rounded text-slate-300 text-center font-mono select-all">
+              https://dash.cloudflare.com/<span class="text-orange-400 font-bold">[account-id]</span>/workers-and-pages
+            </div>
+          </div>
         </div>
 
+        <!-- API Token -->
         <div>
           <div class="flex justify-between items-center mb-1">
             <label class="block text-xs font-medium text-slate-400">API Token کلودفلر *</label>
-            <a href="https://dash.cloudflare.com/profile/api-tokens" target="_blank" rel="noopener noreferrer" class="text-xs text-orange-400 hover:text-orange-300 flex items-center gap-1 underline">
-              <span>ساخت توکن با دسترسی‌های لازم</span>
-              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+            <a href="https://dash.cloudflare.com/profile/api-tokens?permissionGroupKeys=%5B%7B%22key%22%3A%22workers_scripts%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22d1%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22account_settings%22%2C%22type%22%3A%22read%22%7D%2C%7B%22key%22%3A%22account_analytics%22%2C%22type%22%3A%22read%22%7D%5D&accountId=*&zoneId=all&name=Nahan%20Installer" target="_blank" rel="noopener noreferrer" class="text-xs text-orange-400 hover:text-orange-300 flex items-center gap-1 underline font-medium">
+              <span>ساخت توکن خودکار با یک کلیک</span>
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
             </a>
           </div>
-          <input type="password" id="apiToken" dir="ltr" required placeholder="توکن با دسترسی Workers و D1" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm focus:border-orange-500 focus:outline-none text-left" />
-          <p class="text-[11px] text-slate-500 mt-1">دسترسی‌های مورد نیاز: <code class="text-slate-400">Workers Scripts: Edit</code> و <code class="text-slate-400">D1: Edit</code></p>
+          <input type="password" id="apiToken" dir="ltr" required placeholder="توکن تولید شده را اینجا قرار دهید" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm focus:border-orange-500 focus:outline-none text-left" />
+          <p class="text-[11px] text-slate-500 mt-1">با کلیک روی لینک بالا، دسترسی‌های Workers و D1 به طور خودکار انتخاب می‌شوند.</p>
         </div>
       </div>
 
       <!-- مرحله ۲: تنظیمات ورکر -->
       <div id="step-2" class="space-y-4 hidden">
-        <h2 class="text-md font-semibold text-slate-200">گام ۲: تنظیمات ورکر</h2>
+        <h2 class="text-md font-semibold text-slate-200">گام ۲: تنظیمات و سورس ورکر</h2>
         
         <div>
           <div class="flex justify-between items-center mb-1">
             <label class="block text-xs font-medium text-slate-400">نام ورکر (Worker Name) *</label>
             <button type="button" onclick="generateRandomName()" class="text-xs text-orange-400 hover:underline">تولید نام تصادفی</button>
           </div>
-          <input type="text" id="workerName" dir="ltr" required placeholder="مثال: my-fast-worker" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm focus:border-orange-500 focus:outline-none text-left" />
+          <input type="text" id="workerName" dir="ltr" required placeholder="مثال: my-worker-app" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm focus:border-orange-500 focus:outline-none text-left" />
         </div>
 
         <div>
           <label class="block text-xs font-medium text-slate-400 mb-1">آدرس مستقیم فایل سورس کد ورکر (Direct Raw URL) *</label>
           <input type="url" id="scriptUrl" dir="ltr" required placeholder="https://raw.githubusercontent.com/.../worker.js" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm focus:border-orange-500 focus:outline-none text-left" />
-          <p class="text-[11px] text-slate-500 mt-1">لینک مستقیم کد (مانند لینک Raw در گیت‌هاب یا گیت‌لب).</p>
+          <p class="text-[11px] text-slate-500 mt-1">لینک مستقیم فایل کد JavaScript ورکر (مانند لینک دکمه Raw در گیت‌هاب).</p>
         </div>
       </div>
 
       <!-- مرحله ۳: دیتابیس D1 -->
       <div id="step-3" class="space-y-4 hidden">
-        <h2 class="text-md font-semibold text-slate-200">گام ۳: دیتابیس D1 (اختیاری)</h2>
+        <h2 class="text-md font-semibold text-slate-200">گام ۳: پایگاه‌داده ابری D1 (اختیاری)</h2>
         
-        <label class="relative flex items-center justify-between p-3.5 bg-slate-950 border border-slate-800 rounded-xl cursor-pointer">
-          <span class="text-sm font-medium text-slate-300">ساخت و متصل کردن دیتابیس D1</span>
+        <label class="relative flex items-center justify-between p-3.5 bg-slate-950 border border-slate-800 rounded-xl cursor-pointer hover:border-slate-700 transition">
+          <span class="text-sm font-medium text-slate-300">ساخت و اتصال (Binding) پایگاه‌داده D1</span>
           <input type="checkbox" id="enableD1" class="sr-only peer" onchange="toggleD1Fields()">
           <div class="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[19px] after:right-[16px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-orange-500"></div>
         </label>
@@ -96,8 +112,8 @@
             <input type="text" id="d1Name" dir="ltr" placeholder="مثال: my-database" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm focus:border-orange-500 focus:outline-none text-left" />
           </div>
           <div>
-            <label class="block text-xs font-medium text-slate-400 mb-1">نام متغیر بایندینگ در کد (Variable Name) *</label>
-            <input type="text" id="bindingName" dir="ltr" value="DB" placeholder="مثال: DB یا DATABASE" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm focus:border-orange-500 focus:outline-none text-left" />
+            <label class="block text-xs font-medium text-slate-400 mb-1">نام متغیر بایندینگ در کد ورکر (Binding Name) *</label>
+            <input type="text" id="bindingName" dir="ltr" value="DB" placeholder="مثال: DB" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm focus:border-orange-500 focus:outline-none text-left" />
           </div>
         </div>
       </div>
@@ -133,150 +149,4 @@
         <button type="button" id="nextBtn" onclick="nextStep()" class="px-6 py-2.5 rounded-xl bg-orange-500 text-white text-sm font-semibold hover:bg-orange-600 transition shadow-lg shadow-orange-500/20">
           مرحله بعد
         </button>
-        <button type="submit" id="submitBtn" class="hidden px-6 py-2.5 rounded-xl bg-orange-500 text-white text-sm font-semibold hover:bg-orange-600 transition shadow-lg shadow-orange-500/20">
-          شروع استقرار روی کلودفلر
-        </button>
-      </div>
-
-    </form>
-  </div>
-
-  <script>
-    let currentStep = 1;
-    const totalSteps = 4;
-
-    function updateStepper() {
-      // بروزرسانی تگ مرحله
-      document.getElementById('stepBadge').innerText = `مرحله ${currentStep} از ${totalSteps}`;
-
-      // بروزرسانی نوارهای پیشرفت
-      for (let i = 1; i <= totalSteps; i++) {
-        const bar = document.getElementById(`bar-${i}`);
-        if (i <= currentStep) {
-          bar.classList.remove('bg-slate-800');
-          bar.classList.add('bg-orange-500');
-        } else {
-          bar.classList.add('bg-slate-800');
-          bar.classList.remove('bg-orange-500');
-        }
-      }
-
-      // نمایش سکشن مربوطه
-      for (let i = 1; i <= totalSteps; i++) {
-        document.getElementById(`step-${i}`).classList.toggle('hidden', i !== currentStep);
-      }
-
-      // تنظیم وضعیت دکمه‌ها
-      document.getElementById('prevBtn').classList.toggle('hidden', currentStep === 1);
-      document.getElementById('nextBtn').classList.toggle('hidden', currentStep === totalSteps);
-      document.getElementById('submitBtn').classList.toggle('hidden', currentStep !== totalSteps);
-
-      // در مرحله آخر اطلاعات را برای بازبینی نشان بده
-      if (currentStep === 4) {
-        document.getElementById('reviewWorkerName').innerText = document.getElementById('workerName').value || '-';
-        const d1Active = document.getElementById('enableD1').checked;
-        document.getElementById('reviewD1Status').innerText = d1Active 
-          ? `${document.getElementById('d1Name').value} (متغیر: ${document.getElementById('bindingName').value})` 
-          : 'غیرفعال';
-      }
-    }
-
-    function nextStep() {
-      // اعتبارسنجی ورودی‌های مرحله قبل از رفتن به مرحله بعد
-      if (currentStep === 1) {
-        if (!document.getElementById('accountId').checkValidity() || !document.getElementById('apiToken').checkValidity()) {
-          alert('لطفاً Account ID و API Token را وارد کنید.');
-          return;
-        }
-      } else if (currentStep === 2) {
-        if (!document.getElementById('workerName').checkValidity() || !document.getElementById('scriptUrl').checkValidity()) {
-          alert('لطفاً نام ورکر و آدرس فایل کد را مشخص کنید.');
-          return;
-        }
-      } else if (currentStep === 3) {
-        if (document.getElementById('enableD1').checked) {
-          if (!document.getElementById('d1Name').value.trim() || !document.getElementById('bindingName').value.trim()) {
-            alert('لطفاً نام دیتابیس D1 و متغیر بایندینگ را وارد نمایید.');
-            return;
-          }
-        }
-      }
-
-      if (currentStep < totalSteps) {
-        currentStep++;
-        updateStepper();
-      }
-    }
-
-    function prevStep() {
-      if (currentStep > 1) {
-        currentStep--;
-        updateStepper();
-      }
-    }
-
-    function generateRandomName() {
-      const words = ['fast', 'turbo', 'sky', 'pixel', 'smart', 'flow', 'edge', 'shield'];
-      const pick = () => words[Math.floor(Math.random() * words.length)];
-      const num = Math.floor(Math.random() * 899) + 100;
-      document.getElementById('workerName').value = `${pick()}-${pick()}-${num}`;
-    }
-
-    function toggleD1Fields() {
-      const enabled = document.getElementById('enableD1').checked;
-      document.getElementById('d1Fields').classList.toggle('hidden', !enabled);
-      document.getElementById('d1Name').required = enabled;
-      document.getElementById('bindingName').required = enabled;
-    }
-
-    // ارسال نهایی به ورکر بک‌اند
-    document.getElementById('wizardForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const output = document.getElementById('output');
-      const submitBtn = document.getElementById('submitBtn');
-      const prevBtn = document.getElementById('prevBtn');
-
-      output.className = 'mt-4 p-4 rounded-xl text-xs font-mono whitespace-pre-wrap leading-relaxed bg-slate-950 border border-slate-800 text-slate-300';
-      output.innerText = 'در حال ارتباط با کلودفلر، ساخت دیتابیس و استقرار ورکر... لطفاً صبر کنید.';
-      output.classList.remove('hidden');
-
-      submitBtn.disabled = true;
-      prevBtn.disabled = true;
-      submitBtn.classList.add('opacity-50');
-
-      const payload = {
-        accountId: document.getElementById('accountId').value.trim(),
-        apiToken: document.getElementById('apiToken').value.trim(),
-        workerName: document.getElementById('workerName').value.trim(),
-        scriptUrl: document.getElementById('scriptUrl').value.trim(),
-        d1Name: document.getElementById('enableD1').checked ? document.getElementById('d1Name').value.trim() : null,
-        bindingName: document.getElementById('enableD1').checked ? document.getElementById('bindingName').value.trim() : null,
-      };
-
-      try {
-        const response = await fetch('/api/deploy', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-          output.className = 'mt-4 p-4 rounded-xl text-xs font-mono whitespace-pre-wrap leading-relaxed bg-emerald-950/50 border border-emerald-700 text-emerald-300';
-          output.innerText = `عملیات استقرار با موفقیت انجام شد! 🎉\n\nنام ورکر: ${result.workerName}\nزیردامنه workers.dev فعال شد.\n${result.d1DatabaseId ? 'دیتابیس D1 ایجاد و متصل شد (UUID): ' + result.d1DatabaseId : 'بدون دیتابیس D1'}`;
-        } else {
-          throw new Error(result.error || 'خطایی در استقرار رخ داد.');
-        }
-      } catch (err) {
-        output.className = 'mt-4 p-4 rounded-xl text-xs font-mono whitespace-pre-wrap leading-relaxed bg-red-950/50 border border-red-700 text-red-300';
-        output.innerText = `خطا در فرایند استقرار:\n${err.message}`;
-      } finally {
-        submitBtn.disabled = false;
-        prevBtn.disabled = false;
-        submitBtn.classList.remove('opacity-50');
-      }
-    });
-  </script>
-</body>
-</html>
+        <button type="submit" id="submitBtn" class="hidden px-6 py-2.5 rounded-xl bg-orange-500 text-white text-sm
