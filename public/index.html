@@ -70,7 +70,7 @@
         <div>
           <div class="flex justify-between items-center mb-1">
             <label class="block text-xs font-medium text-slate-400">API Token کلودفلر *</label>
-            <a href="https://dash.cloudflare.com/profile/api-tokens?permissionGroupKeys=%5B%7B%22key%22%3A%22workers_scripts%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22d1%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22account_settings%22%2C%22type%22%3A%22read%22%7D%2C%7B%22key%22%3A%22account_analytics%22%2C%22type%22%3A%22read%22%7D%5D&accountId=*&zoneId=all&name=Nahan%20Installer" target="_blank" rel="noopener noreferrer" class="text-xs text-orange-400 hover:text-orange-300 flex items-center gap-1 underline font-medium">
+            <a href="https://dash.cloudflare.com/profile/api-tokens?permissionGroupKeys=%5B%7B%22key%22%3A%22workers_scripts%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22d1%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22account_settings%22%2C%22type%22%3A%22read%22%7D%2C%7B%22key%22%3A%22account_analytics%22%2C%22type%22%3A%22read%22%7D%5D&accountId=*&zoneId=all&name=Jasaz" target="_blank" rel="noopener noreferrer" class="text-xs text-orange-400 hover:text-orange-300 flex items-center gap-1 underline font-medium">
               <span>ساخت خودکار توکن API</span>
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
             </a>
@@ -105,15 +105,17 @@
           <input type="url" id="scriptUrl" dir="ltr" required placeholder="https://raw.githubusercontent.com/.../worker.js" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm focus:border-orange-500 focus:outline-none text-left" />
         </div>
 
-        <!-- سوئیچ مبهم‌سازی کد -->
+        <!-- سوئیچ مبهم‌سازی کد (اصلاح شده) -->
         <div class="pt-2">
-          <label class="relative flex items-center justify-between p-3.5 bg-slate-950 border border-slate-800 rounded-xl cursor-pointer hover:border-slate-700 transition">
-            <div class="flex flex-col">
+          <label class="flex items-center justify-between p-3.5 bg-slate-950 border border-slate-800 rounded-xl cursor-pointer hover:border-slate-700 transition">
+            <div class="flex flex-col ml-3">
               <span class="text-sm font-medium text-slate-200">مبهم‌سازی سورس کد (Code Obfuscator)</span>
               <span class="text-[11px] text-slate-500">رمزنگاری رشته‌ها با XOR/Base64 برای جلوگیری از خوانده‌شدن آسان سورس کد</span>
             </div>
-            <input type="checkbox" id="enableObfuscation" class="sr-only peer" checked>
-            <div class="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[22px] after:right-[16px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-orange-500"></div>
+            <div class="relative shrink-0 flex items-center">
+              <input type="checkbox" id="enableObfuscation" class="sr-only peer" checked>
+              <div class="w-11 h-6 bg-slate-800 rounded-full peer peer-checked:bg-orange-500 transition-colors after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:-translate-x-5"></div>
+            </div>
           </label>
         </div>
       </div>
@@ -122,10 +124,13 @@
       <div id="step-3" class="space-y-4 hidden">
         <h2 class="text-md font-semibold text-slate-200">گام ۳: پایگاه‌داده ابری D1 (اختیاری)</h2>
         
-        <label class="relative flex items-center justify-between p-3.5 bg-slate-950 border border-slate-800 rounded-xl cursor-pointer hover:border-slate-700 transition">
-          <span class="text-sm font-medium text-slate-300">اتصال پایگاه‌داده D1 (ساخت جدید یا اتصال دیتابیس قبلی)</span>
-          <input type="checkbox" id="enableD1" class="sr-only peer" onchange="toggleD1Fields()">
-          <div class="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[19px] after:right-[16px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-orange-500"></div>
+        <!-- سوئیچ D1 (اصلاح شده) -->
+        <label class="flex items-center justify-between p-3.5 bg-slate-950 border border-slate-800 rounded-xl cursor-pointer hover:border-slate-700 transition">
+          <span class="text-sm font-medium text-slate-300 ml-3">اتصال پایگاه‌داده D1 (ساخت جدید یا اتصال دیتابیس قبلی)</span>
+          <div class="relative shrink-0 flex items-center">
+            <input type="checkbox" id="enableD1" class="sr-only peer" onchange="toggleD1Fields()">
+            <div class="w-11 h-6 bg-slate-800 rounded-full peer peer-checked:bg-orange-500 transition-colors after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:-translate-x-5"></div>
+          </div>
         </label>
 
         <div id="d1Fields" class="space-y-4 hidden pt-2">
@@ -215,7 +220,6 @@
       }
     }
 
-    // بارگذاری اطلاعات ذخیره شده از قبل
     window.addEventListener('DOMContentLoaded', () => {
       const savedAcc = localStorage.getItem('_cf_acc_enc');
       const savedTok = localStorage.getItem('_cf_tok_enc');
@@ -291,7 +295,6 @@
           alert('لطفاً فیلد Account ID و API Token را تکمیل کنید.');
           return;
         }
-        // ذخیره خودکار هنگام عبور از مرحله ۱
         saveOrClearCredentials();
       } else if (currentStep === 2) {
         if (!document.getElementById('workerName').checkValidity() || !document.getElementById('scriptUrl').checkValidity()) {
