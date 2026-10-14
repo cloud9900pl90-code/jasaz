@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cloudflare Worker & D1 Deployer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex items-center justify-center p-4">
+  <div class="bg-slate-800 border border-slate-700 w-full max-w-xl rounded-xl shadow-2xl p-6 sm:p-8">
+    <h1 class="text-2xl font-bold text-orange-400 mb-2">Worker & D1 Deployer</h1>
+    <p class="text-slate-400 text-sm mb-6">Deploy external workers and bind D1 databases directly to your Cloudflare account.</p>
+
+    <form id="deployForm" class="space-y-4">
+      <div>
+        <label class="block text-xs uppercase font-semibold text-slate-400 mb-1">Cloudflare Account ID *</label>
+        <input type="text" id="accountId" required placeholder="Found in CF Dashboard > Right sidebar" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm focus:border-orange-500 focus:outline-none" />
+      </div>
+
+      <div>
+        <label class="block text-xs uppercase font-semibold text-slate-400 mb-1">API Token *</label>
+        <input type="password" id="apiToken" required placeholder="Token with Worker & D1 Edit permissions" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm focus:border-orange-500 focus:outline-none" />
+      </div>
+
+      <div>
+        <div class="flex justify-between items-center mb-1">
+          <label class="block text-xs uppercase font-semibold text-slate-400">Worker Name *</label>
+          <button type="button" onclick="generateRandomName()" class="text-xs text-orange-400 hover:underline">Generate Random</button>
+        </div>
+        <input type="text" id="workerName" required placeholder="my-cool-worker" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm focus:border-orange-500 focus:outline-none" />
+      </div>
+
+      <div>
+        <label class="block text-xs uppercase font-semibold text-slate-400 mb-1">Worker.js Direct Raw URL *</label>
+        <input type="url" id="scriptUrl" required placeholder="https://raw.githubusercontent.com/.../worker.js" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm focus:border-orange-500 focus:outline-none" />
+      </div>
+
+      <!-- D1 Optional Section -->
+      <div class="pt-2 border-t border-slate-700">
+        <label class="inline-flex items-center cursor-pointer mb-3">
+          <input type="checkbox" id="enableD1" class="sr-only peer" onchange="toggleD1Fields()" />
+          <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-orange-500"></div>
+          <span class="ml-3 text-sm font-medium text-slate-300">Create & Bind D1 Database</span>
+        </label>
+
+        <div id="d1Fields" class="space-y-4 hidden">
+          <div>
+            <label class="block text-xs uppercase font-semibold text-slate-400 mb-1">D1 Database Name</label>
+            <input type="text" id="d1Name" placeholder="my-database" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm focus:border-orange-500 focus:outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs uppercase font-semibold text-slate-400 mb-1">Binding Variable Name (Env Name)</label>
+            <input type="text" id="bindingName" placeholder="DB" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm focus:border-orange-500 focus:outline-none" />
+          </div>
+        </div>
+      </div>
+
+      <button type="submit" id="submitBtn" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2.5 rounded-lg transition duration-200">
+        Deploy Worker
+      </button>
+    </form>
+
+    <div id="output" class="hidden mt-6 p-4 rounded-lg text-sm border font-mono whitespace-pre-wrap"></div>
+  </div>
+
+  <script>
+    function generateRandomName() {
+      const adjectives = ['frosty', 'neon', 'silent', 'cosmic', 'swift', 'hyper'];
+      const nouns = ['aurora', 'nexus', 'pulse', 'spark', 'matrix', 'stream'];
+      const rand = (arr) => arr[Math.floor(Math.random() * arr.length)];
+      const num = Math.floor(Math.random() * 900) + 100;
+      document.getElementById('workerName').value = `${rand(adjectives)}-${rand(nouns)}-${num}`;
+    }
+
+    function toggleD1Fields() {
+      const enabled = document.getElementById('enableD1').checked;
+      const fields = document.getElementById('d1Fields');
+      fields.classList.toggle('hidden', !enabled);
+      document.getElementById('d1Name').required = enabled;
+      document.getElementById('bindingName').required = enabled;
+    }
+
+    document.getElementById('deployForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const output = document.getElementById('output');
+      const submitBtn = document.getElementById('submitBtn');
+
+      output.classList.remove('hidden', 'bg-red-950', 'border-red-700', 'text-red-200', 'bg-emerald-950', 'border-emerald-700', 'text-emerald-200');
+      output.classList.add('bg-slate-950', 'border-slate-800', 'text-slate-300');
+      output.innerText = 'Deploying... please wait...';
+      submitBtn.disabled = true;
+      submitBtn.classList.add('opacity-50');
+
+      const payload = {
+        accountId: document.getElementById('accountId').value.trim(),
+        apiToken: document.getElementById('apiToken').value.trim(),
+        workerName: document.getElementById('workerName').value.trim(),
+        scriptUrl: document.getElementById('scriptUrl').value.trim(),
+        d1Name: document.getElementById('enableD1').checked ? document.getElementById('d1Name').value.trim() : null,
+        bindingName: document.getElementById('enableD1').checked ? document.getElementById('bindingName').value.trim() : null,
+      };
+
+      try {
+        const response = await fetch('/api/deploy', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          output.classList.remove('bg-slate-950', 'border-slate-800', 'text-slate-300');
+          output.classList.add('bg-emerald-950', 'border-emerald-700', 'text-emerald-200');
+          output.innerText = `Success!\nWorker: ${result.workerName}\n${result.d1DatabaseId ? 'D1 UUID: ' + result.d1DatabaseId : 'No D1 bound.'}`;
+        } else {
+          throw new Error(result.error || 'Deployment failed');
+        }
+      } catch (err) {
+        output.classList.remove('bg-slate-950', 'border-slate-800', 'text-slate-300');
+        output.classList.add('bg-red-950', 'border-red-700', 'text-red-200');
+        output.innerText = `Error:\n${err.message}`;
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('opacity-50');
+      }
+    });
+  </script>
+</body>
+</html>
