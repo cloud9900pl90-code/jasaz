@@ -1,4 +1,3 @@
-// --- هدرهای سراسری جهت جلوگیری قطعی از خطای CORS و NetworkError ---
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
@@ -15,7 +14,6 @@ function jsonResponse(data, status = 200) {
   });
 }
 
-// هندلر درخواست‌های پیش‌پرواز مرورگر (Preflight)
 export async function onRequestOptions() {
   return new Response(null, {
     status: 204,
@@ -23,7 +21,7 @@ export async function onRequestOptions() {
   });
 }
 
-// --- موتور مبهم‌ساز جاوااسکریپت (XOR Table) ---
+// موتور مبهم‌ساز جاوااسکریپت (XOR Table)
 const XOR_KEY = 0x4f;
 
 function encodeStringToTable(str, key) {
@@ -85,7 +83,6 @@ function func_dec(idx) {
   return runtimeHeader + "\n" + transformedCode;
 }
 
-// --- پردازش اصلی در بک‌اند کلودفلر ---
 export async function onRequestPost({ request }) {
   try {
     let data;
@@ -103,21 +100,21 @@ export async function onRequestPost({ request }) {
 
     const cfHeaders = { Authorization: `Bearer ${apiToken}` };
 
-    // ۱. دانلود سورس کد از گیت‌هاب مستقیماً توسط سرورهای کلودفلر (بدون تحریم)
+    // ۱. دانلود سورس کد از گیت‌هاب توسط سرورهای کلودفلر
     let workerScript = "";
     try {
       const scriptRes = await fetch(scriptUrl, {
         headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) PagesDeployer/1.0" },
       });
       if (!scriptRes.ok) {
-        return jsonResponse({ success: false, error: `سرور کلودفلر نتوانست فایل کد را دانلود کند: ${scriptRes.status} ${scriptRes.statusText}` }, 400);
+        return jsonResponse({ success: false, error: `خطا در دریافت سورس ورکر: ${scriptRes.status} ${scriptRes.statusText}` }, 400);
       }
       workerScript = await scriptRes.text();
     } catch (fetchErr) {
-      return jsonResponse({ success: false, error: `خطا در دانلود سورس از لینک اعلام شده: ${fetchErr.message}` }, 400);
+      return jsonResponse({ success: false, error: `خطا در دانلود سورس از لینک: ${fetchErr.message}` }, 400);
     }
 
-    // ۲. مبهم‌سازی در سرور کلودفلر
+    // ۲. مبهم‌سازی در صورت درخواست
     if (enableObfuscation) {
       try {
         workerScript = obfuscateWorkerCode(workerScript);
@@ -129,7 +126,7 @@ export async function onRequestPost({ request }) {
     const bindings = [];
     let d1DatabaseId = null;
 
-    // ۳. مدیریت دیتابیس D1 مستقیماً توسط بک‌اند
+    // ۳. مدیریت دیتابیس D1
     if (d1Name && bindingName) {
       try {
         const listRes = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/d1/database`, {
@@ -168,7 +165,7 @@ export async function onRequestPost({ request }) {
       }
     }
 
-    // ۴. ساخت فرم پلود و ارسال به Cloudflare Workers API
+    // ۴. آپلود ورکر
     const isModule = workerScript.includes("export default") || workerScript.includes("export ");
     const formData = new FormData();
     const metadata = {
@@ -191,21 +188,35 @@ export async function onRequestPost({ request }) {
       return jsonResponse({ success: false, error: `کلودفلر ورکر را نپذیرفت: ${JSON.stringify(uploadData.errors)}` }, 400);
     }
 
-    // ۵. فعال‌سازی دامنه workers.dev
+    // ۵. فعال‌سازی ساب‌دامین و استخراج آدرس کامل Workers.dev
     await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/${workerName}/subdomain`, {
       method: "POST",
       headers: { ...cfHeaders, "Content-Type": "application/json" },
       body: JSON.stringify({ enabled: true }),
     });
 
+    let workerUrl = null;
+    try {
+      const subRes = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/subdomain`, {
+        headers: cfHeaders,
+      });
+      const subData = await subRes.json();
+      if (subData.success && subData.result?.subdomain) {
+        workerUrl = `https://${workerName}.${subData.result.subdomain}.workers.dev`;
+      }
+    } catch {
+      // نادیده گرفتن در صورت خطا در واکشی ساب‌دامین
+    }
+
     return jsonResponse({
       success: true,
-      message: "ورکر با موفقیت مستقر و به روزرسانی شد.",
+      message: "ورکر با موفقیت مستقر شد.",
       workerName,
+      workerUrl,
       d1DatabaseId,
       obfuscated: !!enableObfuscation,
     });
   } catch (err) {
-    return jsonResponse({ success: false, error: `خطای ناشناخته در بک‌اند: ${err.message}` }, 500);
+    return jsonResponse({ success: false, error: `خطای سرور: ${err.message}` }, 500);
   }
 }
