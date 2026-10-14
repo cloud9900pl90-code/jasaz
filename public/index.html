@@ -97,7 +97,7 @@
             <button type="button" onclick="generateRandomName()" class="text-xs text-orange-400 hover:underline">تولید نام رندوم</button>
           </div>
           <input type="text" id="workerName" dir="ltr" required placeholder="اگر نام ورکر قبلی را بزنید، آپدیت می‌شود" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm focus:border-orange-500 focus:outline-none text-left" />
-          <p class="text-[11px] text-slate-500 mt-1">💡 برای آپدیت یک ورکر موجود، کافیست دقیقاً همان نام قبلی را وارد کنید.</p>
+          <p class="text-[11px] text-slate-500 mt-1">💡 برای آپدیت یک ورکر موجود، کافیست نام ورکر قبلی را وارد کنید.</p>
         </div>
 
         <div>
@@ -114,6 +114,20 @@
             </div>
             <div class="relative shrink-0 flex items-center">
               <input type="checkbox" id="enableObfuscation" class="sr-only peer" checked>
+              <div class="w-11 h-6 bg-slate-800 rounded-full peer peer-checked:bg-orange-500 transition-colors after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:-translate-x-5"></div>
+            </div>
+          </label>
+        </div>
+
+        <!-- سوئیچ حذف و ساخت مجدد از ابتدا (Clean Rebuild) -->
+        <div class="pt-1">
+          <label class="flex items-center justify-between p-3.5 bg-slate-950 border border-slate-800 rounded-xl cursor-pointer hover:border-slate-700 transition">
+            <div class="flex flex-col ml-3">
+              <span class="text-sm font-medium text-slate-200">حذف و بازسازی مجدد ورکر (Clean Rebuild)</span>
+              <span class="text-[11px] text-slate-500">در صورت وجود ورکر با همین نام، ابتدا آن را حذف و سپس از صفر ایجاد می‌کند</span>
+            </div>
+            <div class="relative shrink-0 flex items-center">
+              <input type="checkbox" id="recreateWorker" class="sr-only peer">
               <div class="w-11 h-6 bg-slate-800 rounded-full peer peer-checked:bg-orange-500 transition-colors after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:-translate-x-5"></div>
             </div>
           </label>
@@ -160,6 +174,10 @@
           <div class="flex justify-between py-1 border-b border-slate-900">
             <span class="text-slate-500">وضعیت مبهم‌سازی (Obfuscation):</span>
             <span id="reviewObfuscation" class="font-mono text-slate-300">-</span>
+          </div>
+          <div class="flex justify-between py-1 border-b border-slate-900">
+            <span class="text-slate-500">نحوه استقرار ورکر:</span>
+            <span id="reviewRecreate" class="font-mono text-slate-300">-</span>
           </div>
           <div class="flex justify-between py-1 border-b border-slate-900">
             <span class="text-slate-500">دیتابیس D1:</span>
@@ -222,7 +240,6 @@
       }
     }
 
-    // لود اطلاعات ذخیره شده و خواندن پارامترهای لینک (URL Parameters)
     window.addEventListener('DOMContentLoaded', () => {
       const savedAcc = localStorage.getItem('_cf_acc_enc');
       const savedTok = localStorage.getItem('_cf_tok_enc');
@@ -233,7 +250,7 @@
         document.getElementById('clearStorageBtn').classList.remove('hidden');
       }
 
-      // خواندن پارامترها از آدرس صفحه
+      // خواندن پارامترها از URL
       const urlParams = new URLSearchParams(window.location.search);
       const getParam = (...keys) => {
         for (const k of keys) {
@@ -249,6 +266,7 @@
       const pD1 = getParam('d1_name', 'd1Name', 'd1');
       const pBinding = getParam('binding_name', 'bindingName', 'binding');
       const pObf = getParam('obfuscate', 'enableObfuscation');
+      const pRecreate = getParam('recreate', 'rebuild', 'clean');
 
       if (pAcc) document.getElementById('accountId').value = pAcc;
       if (pTok) document.getElementById('apiToken').value = pTok;
@@ -264,6 +282,10 @@
 
       if (pObf !== null) {
         document.getElementById('enableObfuscation').checked = (pObf === 'true' || pObf === '1');
+      }
+
+      if (pRecreate !== null) {
+        document.getElementById('recreateWorker').checked = (pRecreate === 'true' || pRecreate === '1');
       }
     });
 
@@ -289,7 +311,6 @@
       document.getElementById('clearStorageBtn').classList.add('hidden');
     }
 
-    // تولید رندوم نام ورکر
     function generateRandomName() {
       const words = ['fast', 'turbo', 'sky', 'pixel', 'smart', 'flow', 'edge', 'shield'];
       const pick = () => words[Math.floor(Math.random() * words.length)];
@@ -297,7 +318,6 @@
       document.getElementById('workerName').value = `${pick()}-${pick()}-${num}`;
     }
 
-    // تولید رندوم نام دیتابیس D1
     function generateRandomD1Name() {
       const prefixes = ['db', 'data', 'store', 'cloud', 'vault', 'jasaz'];
       const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
@@ -312,7 +332,6 @@
       document.getElementById('bindingName').required = enabled;
     }
 
-    // کپی کردن متن به کلیپ‌بورد
     function copyToClipboard(text, btnElement) {
       navigator.clipboard.writeText(text).then(() => {
         const originalText = btnElement.innerText;
@@ -325,7 +344,6 @@
       });
     }
 
-    // استپر
     let currentStep = 1;
     const totalSteps = 4;
 
@@ -354,6 +372,7 @@
       if (currentStep === 4) {
         document.getElementById('reviewWorkerName').innerText = document.getElementById('workerName').value || '-';
         document.getElementById('reviewObfuscation').innerText = document.getElementById('enableObfuscation').checked ? 'فعال (رمزگذاری با XOR)' : 'غیرفعال (کد خام)';
+        document.getElementById('reviewRecreate').innerText = document.getElementById('recreateWorker').checked ? 'نصب مجدد از صفر (Clean Rebuild)' : 'بروزرسانی مستقیم ورکر';
         const d1Active = document.getElementById('enableD1').checked;
         document.getElementById('reviewD1Status').innerText = d1Active 
           ? `${document.getElementById('d1Name').value} (متغیر بایندینگ: ${document.getElementById('bindingName').value})` 
@@ -395,7 +414,6 @@
       }
     }
 
-    // ارسال فرم
     document.getElementById('wizardForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       saveOrClearCredentials();
@@ -418,6 +436,7 @@
         workerName: document.getElementById('workerName').value.trim(),
         scriptUrl: document.getElementById('scriptUrl').value.trim(),
         enableObfuscation: document.getElementById('enableObfuscation').checked,
+        recreateWorker: document.getElementById('recreateWorker').checked,
         d1Name: document.getElementById('enableD1').checked ? document.getElementById('d1Name').value.trim() : null,
         bindingName: document.getElementById('enableD1').checked ? document.getElementById('bindingName').value.trim() : null,
       };
@@ -448,6 +467,7 @@
             </div>
             <div class="space-y-1.5 text-xs">
               <div>نام ورکر: <span class="font-mono text-white font-semibold">${result.workerName}</span></div>
+              <div>وضعیت نصب: <span class="text-white">${result.recreated ? 'حذف و بازسازی مجدد از ابتدا (Clean)' : 'به‌روزرسانی مستقیم'}</span></div>
               <div>مبهم‌سازی سورس: <span class="text-white">${result.obfuscated ? 'فعال شد' : 'غیرفعال'}</span></div>
               ${result.d1DatabaseId ? `<div>دیتابیس D1 متصل شد (UUID): <span class="font-mono text-emerald-400">${result.d1DatabaseId}</span></div>` : '<div>دیتابیس D1: بدون دیتابیس</div>'}
             </div>
