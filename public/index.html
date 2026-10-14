@@ -346,7 +346,7 @@
       const prevBtn = document.getElementById('prevBtn');
 
       output.className = 'mt-4 p-4 rounded-xl text-xs font-mono whitespace-pre-wrap leading-relaxed bg-slate-950 border border-slate-800 text-slate-300';
-      output.innerText = 'در حال ارتباط با کلودفلر، پردازش کدها و استقرار ورکر... لطفاً شکیبا باشید.';
+      output.innerText = 'در حال ارتباط با بک‌اند کلودفلر، دانلود سورس و استقرار ورکر... لطفاً شکیبا باشید.';
       output.classList.remove('hidden');
 
       submitBtn.disabled = true;
@@ -366,21 +366,29 @@
       try {
         const response = await fetch('/api/deploy', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
           body: JSON.stringify(payload),
         });
 
-        const result = await response.json();
+        let result;
+        try {
+          result = await response.json();
+        } catch {
+          throw new Error(`پاسخ سرور در قالب JSON نبود (کد وضعیت: ${response.status})`);
+        }
 
         if (result.success) {
           output.className = 'mt-4 p-4 rounded-xl text-xs font-mono whitespace-pre-wrap leading-relaxed bg-emerald-950/50 border border-emerald-700 text-emerald-300';
-          output.innerText = `عملیات با موفقیت انجام شد! 🎉\n\nنام ورکر: ${result.workerName}\nمبهم‌سازی سورس: ${result.obfuscated ? 'انجام شد' : 'بدون تغییر'}\nزیردامنه workers.dev فعال شد.\n${result.d1DatabaseId ? 'دیتابیس D1 متصل شد (UUID): ' + result.d1DatabaseId : 'بدون دیتابیس D1'}`;
+          output.innerText = `عملیات با موفقیت انجام شد! 🎉\n\nنام ورکر: ${result.workerName}\nمبهم‌سازی سورس: ${result.obfuscated ? 'فعال شد' : 'غیرفعال'}\nدامنه workers.dev فعال شد.\n${result.d1DatabaseId ? 'دیتابیس D1 متصل شد (UUID): ' + result.d1DatabaseId : 'بدون دیتابیس D1'}`;
         } else {
           throw new Error(result.error || 'خطایی در استقرار رخ داد.');
         }
       } catch (err) {
         output.className = 'mt-4 p-4 rounded-xl text-xs font-mono whitespace-pre-wrap leading-relaxed bg-red-950/50 border border-red-700 text-red-300';
-        output.innerText = `خطا در فرایند استقرار:\n${err.message}`;
+        output.innerText = `خطا در فرایند استقرار:\n${err.message}\n\nنکته: مطمئن شوید پروژه را روی آدرس دامنه Cloudflare Pages باز کرده‌اید (نه به صورت فایل لوکال file://).`;
       } finally {
         submitBtn.disabled = false;
         prevBtn.disabled = false;
