@@ -70,7 +70,7 @@
         <div>
           <div class="flex justify-between items-center mb-1">
             <label class="block text-xs font-medium text-slate-400">API Token کلودفلر *</label>
-            <a href="https://dash.cloudflare.com/profile/api-tokens?permissionGroupKeys=%5B%7B%22key%22%3A%22workers_scripts%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22d1%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22account_settings%22%2C%22type%22%3A%22read%22%7D%2C%7B%22key%22%3A%22account_analytics%22%2C%22type%22%3A%22read%22%7D%5D&accountId=*&zoneId=all&name=Jasaz" target="_blank" rel="noopener noreferrer" class="text-xs text-orange-400 hover:text-orange-300 flex items-center gap-1 underline font-medium">
+            <a href="https://dash.cloudflare.com/profile/api-tokens?permissionGroupKeys=%5B%7B%22key%22%3A%22workers_scripts%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22d1%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22account_settings%22%2C%22type%22%3A%22read%22%7D%2C%7B%22key%22%3A%22account_analytics%22%2C%22type%22%3A%22read%22%7D%5D&accountId=*&zoneId=all&name=Nahan%20Installer" target="_blank" rel="noopener noreferrer" class="text-xs text-orange-400 hover:text-orange-300 flex items-center gap-1 underline font-medium">
               <span>ساخت خودکار توکن API</span>
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
             </a>
@@ -105,7 +105,7 @@
           <input type="url" id="scriptUrl" dir="ltr" required placeholder="https://raw.githubusercontent.com/.../worker.js" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm focus:border-orange-500 focus:outline-none text-left" />
         </div>
 
-        <!-- سوئیچ مبهم‌سازی کد (اصلاح شده) -->
+        <!-- سوئیچ مبهم‌سازی کد -->
         <div class="pt-2">
           <label class="flex items-center justify-between p-3.5 bg-slate-950 border border-slate-800 rounded-xl cursor-pointer hover:border-slate-700 transition">
             <div class="flex flex-col ml-3">
@@ -124,7 +124,7 @@
       <div id="step-3" class="space-y-4 hidden">
         <h2 class="text-md font-semibold text-slate-200">گام ۳: پایگاه‌داده ابری D1 (اختیاری)</h2>
         
-        <!-- سوئیچ D1 (اصلاح شده) -->
+        <!-- سوئیچ D1 -->
         <label class="flex items-center justify-between p-3.5 bg-slate-950 border border-slate-800 rounded-xl cursor-pointer hover:border-slate-700 transition">
           <span class="text-sm font-medium text-slate-300 ml-3">اتصال پایگاه‌داده D1 (ساخت جدید یا اتصال دیتابیس قبلی)</span>
           <div class="relative shrink-0 flex items-center">
@@ -135,7 +135,10 @@
 
         <div id="d1Fields" class="space-y-4 hidden pt-2">
           <div>
-            <label class="block text-xs font-medium text-slate-400 mb-1">نام دیتابیس D1 *</label>
+            <div class="flex justify-between items-center mb-1">
+              <label class="block text-xs font-medium text-slate-400">نام دیتابیس D1 *</label>
+              <button type="button" onclick="generateRandomD1Name()" class="text-xs text-orange-400 hover:underline">تولید نام رندوم</button>
+            </div>
             <input type="text" id="d1Name" dir="ltr" placeholder="اگر دیتابیس وجود داشته باشد به آن متصل می‌شود" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm focus:border-orange-500 focus:outline-none text-left" />
           </div>
           <div>
@@ -189,7 +192,6 @@
   </div>
 
   <script>
-    // --- توابع انکود / دیکود امن برای LocalStorage ---
     const STORAGE_KEY = 0x3b;
 
     function encodeStorage(str) {
@@ -220,6 +222,7 @@
       }
     }
 
+    // لود اطلاعات ذخیره شده و خواندن پارامترهای لینک (URL Parameters)
     window.addEventListener('DOMContentLoaded', () => {
       const savedAcc = localStorage.getItem('_cf_acc_enc');
       const savedTok = localStorage.getItem('_cf_tok_enc');
@@ -228,6 +231,39 @@
         document.getElementById('accountId').value = decodeStorage(savedAcc);
         document.getElementById('apiToken').value = decodeStorage(savedTok);
         document.getElementById('clearStorageBtn').classList.remove('hidden');
+      }
+
+      // خواندن پارامترها از آدرس صفحه
+      const urlParams = new URLSearchParams(window.location.search);
+      const getParam = (...keys) => {
+        for (const k of keys) {
+          if (urlParams.has(k)) return urlParams.get(k);
+        }
+        return null;
+      };
+
+      const pAcc = getParam('account_id', 'accountId');
+      const pTok = getParam('token', 'apiToken', 'apiKey');
+      const pWorker = getParam('worker_name', 'workerName', 'name');
+      const pUrl = getParam('script_url', 'scriptUrl', 'url');
+      const pD1 = getParam('d1_name', 'd1Name', 'd1');
+      const pBinding = getParam('binding_name', 'bindingName', 'binding');
+      const pObf = getParam('obfuscate', 'enableObfuscation');
+
+      if (pAcc) document.getElementById('accountId').value = pAcc;
+      if (pTok) document.getElementById('apiToken').value = pTok;
+      if (pWorker) document.getElementById('workerName').value = pWorker;
+      if (pUrl) document.getElementById('scriptUrl').value = pUrl;
+
+      if (pD1 || pBinding) {
+        document.getElementById('enableD1').checked = true;
+        toggleD1Fields();
+        if (pD1) document.getElementById('d1Name').value = pD1;
+        if (pBinding) document.getElementById('bindingName').value = pBinding;
+      }
+
+      if (pObf !== null) {
+        document.getElementById('enableObfuscation').checked = (pObf === 'true' || pObf === '1');
       }
     });
 
@@ -253,7 +289,43 @@
       document.getElementById('clearStorageBtn').classList.add('hidden');
     }
 
-    // --- مدیریت مراحل استپر ---
+    // تولید رندوم نام ورکر
+    function generateRandomName() {
+      const words = ['fast', 'turbo', 'sky', 'pixel', 'smart', 'flow', 'edge', 'shield'];
+      const pick = () => words[Math.floor(Math.random() * words.length)];
+      const num = Math.floor(Math.random() * 899) + 100;
+      document.getElementById('workerName').value = `${pick()}-${pick()}-${num}`;
+    }
+
+    // تولید رندوم نام دیتابیس D1
+    function generateRandomD1Name() {
+      const prefixes = ['db', 'data', 'store', 'cloud', 'vault', 'jasaz'];
+      const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+      const num = Math.floor(Math.random() * 899) + 100;
+      document.getElementById('d1Name').value = `${pick(prefixes)}-${num}`;
+    }
+
+    function toggleD1Fields() {
+      const enabled = document.getElementById('enableD1').checked;
+      document.getElementById('d1Fields').classList.toggle('hidden', !enabled);
+      document.getElementById('d1Name').required = enabled;
+      document.getElementById('bindingName').required = enabled;
+    }
+
+    // کپی کردن متن به کلیپ‌بورد
+    function copyToClipboard(text, btnElement) {
+      navigator.clipboard.writeText(text).then(() => {
+        const originalText = btnElement.innerText;
+        btnElement.innerText = 'کپی شد! ✓';
+        btnElement.classList.add('text-emerald-400');
+        setTimeout(() => {
+          btnElement.innerText = originalText;
+          btnElement.classList.remove('text-emerald-400');
+        }, 2000);
+      });
+    }
+
+    // استپر
     let currentStep = 1;
     const totalSteps = 4;
 
@@ -323,20 +395,7 @@
       }
     }
 
-    function generateRandomName() {
-      const words = ['fast', 'turbo', 'sky', 'pixel', 'smart', 'flow', 'edge', 'shield'];
-      const pick = () => words[Math.floor(Math.random() * words.length)];
-      const num = Math.floor(Math.random() * 899) + 100;
-      document.getElementById('workerName').value = `${pick()}-${pick()}-${num}`;
-    }
-
-    function toggleD1Fields() {
-      const enabled = document.getElementById('enableD1').checked;
-      document.getElementById('d1Fields').classList.toggle('hidden', !enabled);
-      document.getElementById('d1Name').required = enabled;
-      document.getElementById('bindingName').required = enabled;
-    }
-
+    // ارسال فرم
     document.getElementById('wizardForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       saveOrClearCredentials();
@@ -346,7 +405,7 @@
       const prevBtn = document.getElementById('prevBtn');
 
       output.className = 'mt-4 p-4 rounded-xl text-xs font-mono whitespace-pre-wrap leading-relaxed bg-slate-950 border border-slate-800 text-slate-300';
-      output.innerText = 'در حال ارتباط با بک‌اند کلودفلر، دانلود سورس و استقرار ورکر... لطفاً شکیبا باشید.';
+      output.innerHTML = 'در حال ارتباط با بک‌اند کلودفلر، دانلود سورس و استقرار ورکر... لطفاً شکیبا باشید.';
       output.classList.remove('hidden');
 
       submitBtn.disabled = true;
@@ -381,14 +440,47 @@
         }
 
         if (result.success) {
-          output.className = 'mt-4 p-4 rounded-xl text-xs font-mono whitespace-pre-wrap leading-relaxed bg-emerald-950/50 border border-emerald-700 text-emerald-300';
-          output.innerText = `عملیات با موفقیت انجام شد! 🎉\n\nنام ورکر: ${result.workerName}\nمبهم‌سازی سورس: ${result.obfuscated ? 'فعال شد' : 'غیرفعال'}\nدامنه workers.dev فعال شد.\n${result.d1DatabaseId ? 'دیتابیس D1 متصل شد (UUID): ' + result.d1DatabaseId : 'بدون دیتابیس D1'}`;
+          output.className = 'mt-4 p-4 rounded-xl text-xs font-sans leading-relaxed bg-emerald-950/60 border border-emerald-700 text-emerald-200';
+          
+          let html = `
+            <div class="flex items-center gap-2 text-sm font-bold text-emerald-300 mb-2">
+              <span>عملیات با موفقیت انجام شد! 🎉</span>
+            </div>
+            <div class="space-y-1.5 text-xs">
+              <div>نام ورکر: <span class="font-mono text-white font-semibold">${result.workerName}</span></div>
+              <div>مبهم‌سازی سورس: <span class="text-white">${result.obfuscated ? 'فعال شد' : 'غیرفعال'}</span></div>
+              ${result.d1DatabaseId ? `<div>دیتابیس D1 متصل شد (UUID): <span class="font-mono text-emerald-400">${result.d1DatabaseId}</span></div>` : '<div>دیتابیس D1: بدون دیتابیس</div>'}
+            </div>
+          `;
+
+          if (result.workerUrl) {
+            html += `
+              <div class="mt-4 pt-3 border-t border-emerald-800/60">
+                <div class="text-xs text-slate-300 mb-1.5 font-medium">آدرس کامل و اختصاصی ورکر:</div>
+                <div dir="ltr" class="flex items-center justify-between bg-slate-900 border border-slate-700/80 rounded-lg p-2 gap-2">
+                  <a href="${result.workerUrl}" target="_blank" rel="noopener noreferrer" class="text-xs font-mono text-orange-400 hover:underline truncate">
+                    ${result.workerUrl}
+                  </a>
+                  <div class="flex items-center gap-1 shrink-0">
+                    <button type="button" onclick="copyToClipboard('${result.workerUrl}', this)" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 px-2.5 py-1 rounded transition">
+                      کپی آدرس
+                    </button>
+                    <a href="${result.workerUrl}" target="_blank" rel="noopener noreferrer" class="text-xs bg-orange-500 hover:bg-orange-600 text-white px-2.5 py-1 rounded transition">
+                      باز کردن
+                    </a>
+                  </div>
+                </div>
+              </div>
+            `;
+          }
+
+          output.innerHTML = html;
         } else {
           throw new Error(result.error || 'خطایی در استقرار رخ داد.');
         }
       } catch (err) {
         output.className = 'mt-4 p-4 rounded-xl text-xs font-mono whitespace-pre-wrap leading-relaxed bg-red-950/50 border border-red-700 text-red-300';
-        output.innerText = `خطا در فرایند استقرار:\n${err.message}\n\nنکته: مطمئن شوید پروژه را روی آدرس دامنه Cloudflare Pages باز کرده‌اید (نه به صورت فایل لوکال file://).`;
+        output.innerText = `خطا در فرایند استقرار:\n${err.message}`;
       } finally {
         submitBtn.disabled = false;
         prevBtn.disabled = false;
