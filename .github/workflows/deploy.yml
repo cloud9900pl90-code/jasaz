@@ -21,4 +21,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy public --project-name=jasaz
+          # ابتدا پروژه را در صورت عدم وجود می‌سازد، سپس آن را مستقر می‌کند
+          command: |
+            pages project create jasaz --production-branch=main || true
+            pages deploy public --project-name=jasaz --commit-dirty=true
