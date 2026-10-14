@@ -4,7 +4,7 @@ export async function onRequestPost({ request }) {
     const { accountId, apiToken, workerName, scriptUrl, d1Name, bindingName } = data;
 
     if (!accountId || !apiToken || !workerName || !scriptUrl) {
-      return new Response(JSON.stringify({ success: false, error: "Missing required fields" }), {
+      return new Response(JSON.stringify({ success: false, error: "فیلدهای اجباری تکمیل نشده‌اند." }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
       });
@@ -14,10 +14,10 @@ export async function onRequestPost({ request }) {
       Authorization: `Bearer ${apiToken}`,
     };
 
-    // 1. Fetch worker code from the remote URL
+    // ۱. دریافت کدهای ورکر از لینک ورودی
     const scriptRes = await fetch(scriptUrl);
     if (!scriptRes.ok) {
-      return new Response(JSON.stringify({ success: false, error: `Failed to fetch worker.js: ${scriptRes.statusText}` }), {
+      return new Response(JSON.stringify({ success: false, error: `خطا در دریافت سورس ورکر: ${scriptRes.statusText}` }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
       });
@@ -25,9 +25,9 @@ export async function onRequestPost({ request }) {
     const workerScript = await scriptRes.text();
 
     const bindings = [];
-
-    // 2. Optional: Create D1 Database and bind it
     let d1DatabaseId = null;
+
+    // ۲. ایجاد دیتابیس D1 در صورت وجود درخواست
     if (d1Name && bindingName) {
       const d1Res = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/d1/database`, {
         method: "POST",
@@ -40,7 +40,7 @@ export async function onRequestPost({ request }) {
 
       const d1Data = await d1Res.json();
       if (!d1Data.success) {
-        return new Response(JSON.stringify({ success: false, error: `D1 Creation Failed: ${JSON.stringify(d1Data.errors)}` }), {
+        return new Response(JSON.stringify({ success: false, error: `خطا در ساخت دیتابیس D1: ${JSON.stringify(d1Data.errors)}` }), {
           status: 400,
           headers: { "Content-Type": "application/json" },
         });
@@ -54,7 +54,7 @@ export async function onRequestPost({ request }) {
       });
     }
 
-    // 3. Upload Worker with ES Module syntax and Bindings via Multipart Form Data
+    // ۳. آپلود کد ورکر به همراه متغیر بایندینگ D1
     const formData = new FormData();
     const metadata = {
       main_module: "worker.js",
@@ -73,13 +73,13 @@ export async function onRequestPost({ request }) {
 
     const uploadData = await uploadRes.json();
     if (!uploadData.success) {
-      return new Response(JSON.stringify({ success: false, error: `Worker Upload Failed: ${JSON.stringify(uploadData.errors)}` }), {
+      return new Response(JSON.stringify({ success: false, error: `خطا در آپلود ورکر: ${JSON.stringify(uploadData.errors)}` }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
       });
     }
 
-    // 4. Enable workers.dev subdomain for the worker
+    // ۴. فعال‌سازی ساب‌دامین workers.dev برای ورکر آپلود شده
     await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/${workerName}/subdomain`, {
       method: "POST",
       headers: {
@@ -92,7 +92,7 @@ export async function onRequestPost({ request }) {
     return new Response(
       JSON.stringify({
         success: true,
-        message: "Worker deployed successfully!",
+        message: "ورکر با موفقیت منتشر شد.",
         workerName,
         d1DatabaseId,
       }),
