@@ -92,7 +92,7 @@ export async function onRequestPost({ request }) {
       return jsonResponse({ success: false, error: "قالب داده‌های ارسالی معتبر نیست." }, 400);
     }
 
-    const { accountId, apiToken, workerName, scriptUrl, d1Name, bindingName, enableObfuscation } = data;
+    const { accountId, apiToken, workerName, scriptUrl, d1Name, bindingName, enableObfuscation, recreateWorker } = data;
 
     if (!accountId || !apiToken || !workerName || !scriptUrl) {
       return jsonResponse({ success: false, error: "لطفاً تمامی فیلدهای الزامی را پر کنید." }, 400);
@@ -114,7 +114,7 @@ export async function onRequestPost({ request }) {
       return jsonResponse({ success: false, error: `خطا در دانلود سورس از لینک: ${fetchErr.message}` }, 400);
     }
 
-    // ۲. مبهم‌سازی در صورت درخواست
+    // ۲. مبهم‌سازی در صورت انتخاب
     if (enableObfuscation) {
       try {
         workerScript = obfuscateWorkerCode(workerScript);
@@ -165,7 +165,19 @@ export async function onRequestPost({ request }) {
       }
     }
 
-    // ۴. آپلود ورکر
+    // ۴. در صورت فعال بودن Recreate، ابتدا ورکر قبلی حذف می‌شود
+    if (recreateWorker) {
+      try {
+        await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/${workerName}`, {
+          method: "DELETE",
+          headers: cfHeaders,
+        });
+      } catch {
+        // نادیده گرفتن در صورتی که ورکر وجود نداشته باشد
+      }
+    }
+
+    // ۵. آپلود و استقرار ورکر
     const isModule = workerScript.includes("export default") || workerScript.includes("export ");
     const formData = new FormData();
     const metadata = {
@@ -188,7 +200,7 @@ export async function onRequestPost({ request }) {
       return jsonResponse({ success: false, error: `کلودفلر ورکر را نپذیرفت: ${JSON.stringify(uploadData.errors)}` }, 400);
     }
 
-    // ۵. فعال‌سازی ساب‌دامین و استخراج آدرس کامل Workers.dev
+    // ۶. فعال‌سازی ساب‌دامین و واکشی آدرس اختصاصی
     await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/${workerName}/subdomain`, {
       method: "POST",
       headers: { ...cfHeaders, "Content-Type": "application/json" },
@@ -205,16 +217,17 @@ export async function onRequestPost({ request }) {
         workerUrl = `https://${workerName}.${subData.result.subdomain}.workers.dev`;
       }
     } catch {
-      // نادیده گرفتن در صورت خطا در واکشی ساب‌دامین
+      // نادیده گرفتن در صورت بروز خطای فرعی در واکشی ساب‌دامین
     }
 
     return jsonResponse({
       success: true,
-      message: "ورکر با موفقیت مستقر شد.",
+      message: recreateWorker ? "ورکر قبلی حذف و مجدداً از صفر ساخته شد." : "ورکر با موفقیت مستقر شد.",
       workerName,
       workerUrl,
       d1DatabaseId,
       obfuscated: !!enableObfuscation,
+      recreated: !!recreateWorker,
     });
   } catch (err) {
     return jsonResponse({ success: false, error: `خطای سرور: ${err.message}` }, 500);
