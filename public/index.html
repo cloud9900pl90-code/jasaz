@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>نصب‌کننده، دیکودر و آپدیت ورکر و دیتابیس کلودفلر | Jasaz</title>
+  <title>نصب‌کننده و آپدیت ورکر و دیتابیس کلودفلر | Jasaz</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -78,7 +78,6 @@
           <input type="password" id="apiToken" dir="ltr" required placeholder="توکن با دسترسی Workers و D1" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm focus:border-orange-500 focus:outline-none text-left" />
         </div>
 
-        <!-- تیک ذخیره انکود شده در مرورگر -->
         <div class="pt-1">
           <label class="flex items-center gap-2 cursor-pointer select-none">
             <input type="checkbox" id="saveCredentials" class="w-4 h-4 rounded bg-slate-950 border-slate-800 text-orange-500 focus:ring-0 cursor-pointer" checked />
@@ -105,32 +104,35 @@
           <input type="url" id="scriptUrl" dir="ltr" required placeholder="https://raw.githubusercontent.com/.../worker.js" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm focus:border-orange-500 focus:outline-none text-left" />
         </div>
 
-        <!-- تنظیمات پردازش سورس (عملیات مرورگر بدون مصرف منابع سرور) -->
-        <div class="p-4 bg-slate-950 border border-slate-800 rounded-xl space-y-3">
-          <label class="block text-xs font-bold text-slate-300">پردازش سورس کد در مرورگر (Client-Side):</label>
-          
-          <div class="space-y-2">
-            <label class="flex items-center gap-2.5 cursor-pointer select-none">
-              <input type="radio" name="codeAction" value="raw" class="text-orange-500 focus:ring-0 cursor-pointer">
-              <span class="text-xs text-slate-300 font-medium">بدون تغییر (کد خام و استاندارد)</span>
-            </label>
-            
-            <label class="flex items-center gap-2.5 cursor-pointer select-none">
-              <input type="radio" name="codeAction" value="obfuscate" checked class="text-orange-500 focus:ring-0 cursor-pointer">
-              <div class="flex flex-col">
-                <span class="text-xs text-slate-300 font-medium">مبهم‌سازی و رمزنگاری سورس (XOR Obfuscator)</span>
-                <span class="text-[10px] text-slate-500">رمزنگاری رشته‌ها برای جلوگیری از خوانده شدن آسان سورس</span>
-              </div>
-            </label>
+        <!-- سوئیچ مبهم‌سازی کد -->
+        <div class="pt-2">
+          <label class="flex items-center justify-between p-3.5 bg-slate-950 border border-slate-800 rounded-xl cursor-pointer hover:border-slate-700 transition">
+            <div class="flex flex-col ml-3">
+              <span class="text-sm font-medium text-slate-200">مبهم‌سازی سورس کد (Code Obfuscator)</span>
+              <span class="text-[11px] text-slate-500">رمزنگاری رشته‌ها با XOR/Base64 برای جلوگیری از خوانده‌شدن آسان سورس کد</span>
+            </div>
+            <div class="relative shrink-0 flex items-center">
+              <input type="checkbox" id="enableObfuscation" class="sr-only peer" checked>
+              <div class="w-11 h-6 bg-slate-800 rounded-full peer peer-checked:bg-orange-500 transition-colors after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:-translate-x-5"></div>
+            </div>
+          </label>
+        </div>
 
-            <label class="flex items-center gap-2.5 cursor-pointer select-none">
-              <input type="radio" name="codeAction" value="deobfuscate" class="text-orange-500 focus:ring-0 cursor-pointer">
-              <div class="flex flex-col">
-                <span class="text-xs text-emerald-400 font-bold">رمزگشایی کدهای انکود شده (Deobfuscate / Decode)</span>
-                <span class="text-[10px] text-slate-500">تبدیل کدهای انکودشده با _0x_key و باز کردن فشرده‌سازی BPB به کد اصلی</span>
-              </div>
-            </label>
-          </div>
+        <!-- سوئیچ پشتیبانی از ورکر BPB (دیکود در مرورگر) -->
+        <div class="pt-1">
+          <label class="flex items-center justify-between p-3.5 bg-slate-950 border border-slate-800 rounded-xl cursor-pointer hover:border-slate-700 transition">
+            <div class="flex flex-col ml-3">
+              <span class="text-sm font-medium text-slate-200 flex items-center gap-1.5">
+                <span>رمزگشایی ورکر BPB در مرورگر</span>
+                <span class="text-[10px] bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 px-1.5 py-0.5 rounded font-mono font-bold">BPB Decode</span>
+              </span>
+              <span class="text-[11px] text-slate-500">استخراج و باز کردن سورس فشرده (Gzip) در مرورگر برای جلوگیری از ارور ۱۱۰۲ کلودفلر</span>
+            </div>
+            <div class="relative shrink-0 flex items-center">
+              <input type="checkbox" id="isBpb" class="sr-only peer">
+              <div class="w-11 h-6 bg-slate-800 rounded-full peer peer-checked:bg-orange-500 transition-colors after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:-translate-x-5"></div>
+            </div>
+          </label>
         </div>
 
         <!-- سوئیچ حذف و ساخت مجدد از ابتدا (Clean Rebuild) -->
@@ -186,8 +188,12 @@
             <span id="reviewWorkerName" class="font-mono text-orange-400">-</span>
           </div>
           <div class="flex justify-between py-1 border-b border-slate-900">
-            <span class="text-slate-500">نوع پردازش سورس:</span>
-            <span id="reviewAction" class="font-mono text-slate-300">-</span>
+            <span class="text-slate-500">وضعیت مبهم‌سازی (Obfuscation):</span>
+            <span id="reviewObfuscation" class="font-mono text-slate-300">-</span>
+          </div>
+          <div class="flex justify-between py-1 border-b border-slate-900">
+            <span class="text-slate-500">دیکود در مرورگر (BPB):</span>
+            <span id="reviewBpb" class="font-mono text-slate-300">-</span>
           </div>
           <div class="flex justify-between py-1 border-b border-slate-900">
             <span class="text-slate-500">نحوه استقرار ورکر:</span>
@@ -216,7 +222,7 @@
           مرحله بعد
         </button>
         <button type="submit" id="submitBtn" class="hidden px-6 py-2.5 rounded-xl bg-orange-500 text-white text-sm font-semibold hover:bg-orange-600 transition shadow-lg shadow-orange-500/20">
-          شروع پردازش و استقرار
+          شروع استقرار / به‌روزرسانی
         </button>
       </div>
 
@@ -254,267 +260,29 @@
       }
     }
 
-    // --- موتور پردازش در مرورگر کاربر (Zero Cloudflare CPU Usage) ---
-    const XOR_KEY = 0x4f;
-
-    function encodeStringToTable(str, key) {
-      const utf8Str = unescape(encodeURIComponent(str));
-      let out = "";
-      for (let i = 0; i < utf8Str.length; i++) {
-        out += String.fromCharCode(utf8Str.charCodeAt(i) ^ (key ^ (i % 11)));
-      }
-      return btoa(out);
-    }
-
-    function decodeTableEntry(b64Str, key) {
-      const raw = atob(b64Str);
-      let out = "";
-      for (let i = 0; i < raw.length; i++) {
-        out += String.fromCharCode(raw.charCodeAt(i) ^ (key ^ (i % 11)));
-      }
-      try {
-        out = decodeURIComponent(escape(out));
-      } catch (_) {}
-      return out;
-    }
-
-    function isValidJsIdentifier(s) {
-      if (!s) return false;
-      const reserved = new Set([
-        'break','case','catch','class','const','continue','debugger','default',
-        'delete','do','else','export','extends','finally','for','function',
-        'if','import','in','instanceof','new','return','super','switch',
-        'this','throw','try','typeof','var','void','while','with','yield',
-        'let','static','enum','await','implements','interface','package',
-        'private','protected','public','null','true','false','NaN','undefined'
-      ]);
-      return !reserved.has(s) && /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(s);
-    }
-
-    // دیکودر و بازگردانی سورس انکود شده به سورس خوانا
-    async function deobfuscateWorkerCode(code) {
-      // ۱. اگر ساختار BPB دارد، سورس فشرده را باز کن
+    // باز کردن سورس فشرده BPB در مرورگر با قابلیت مرورگر
+    async function decodeBpbInBrowser(code) {
       const bpbMatch = code.match(/Object\.assign\(globalThis,\s*(\{[\s\S]*?\})\);/);
-      if (bpbMatch) {
-        try {
-          const embedded = JSON.parse(bpbMatch[1]);
-          if (embedded.SOURCE_CONTENT) {
-            const bin = atob(embedded.SOURCE_CONTENT);
-            const bytes = new Uint8Array(bin.length);
-            for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-            const ds = new DecompressionStream('gzip');
-            const writer = ds.writable.getWriter();
-            writer.write(bytes);
-            writer.close();
-            const res = new Response(ds.readable);
-            code = await res.text();
-          }
-        } catch (e) {
-          console.warn('BPB Gzip decompression error:', e);
-        }
-      }
-
-      // ۲. رمزگشایی جدول _0x_key و _0x_tbl
-      const keyMatch = code.match(/const _0x_key\s*=\s*(\d+);/);
-      const tblMatch = code.match(/const _0x_tbl\s*=\s*(\[.*?\]);/s);
-      if (!keyMatch || !tblMatch) return code;
-
-      const key = parseInt(keyMatch[1], 10);
-      let tbl;
+      if (!bpbMatch) return code;
       try {
-        tbl = JSON.parse(tblMatch[1]);
-      } catch {
-        return code;
+        const embedded = JSON.parse(bpbMatch[1]);
+        if (embedded.SOURCE_CONTENT) {
+          const bin = atob(embedded.SOURCE_CONTENT);
+          const bytes = new Uint8Array(bin.length);
+          for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+          const ds = new DecompressionStream('gzip');
+          const writer = ds.writable.getWriter();
+          writer.write(bytes);
+          writer.close();
+          const res = new Response(ds.readable);
+          return await res.text();
+        }
+      } catch (err) {
+        console.warn('خطا در دی‌کامپرس BPB:', err);
       }
-      const decodedStrings = tbl.map(item => decodeTableEntry(item, key));
-
-      let clean = code.replace(/^\/\/\s*@ts-nocheck\s*\n/, "");
-      const decoderPattern = /const _0x_key\s*=\s*\d+;\s*const _0x_tbl\s*=\s*\[.*?\];\s*const _0x_cache\s*=\s*new Map\(\);\s*function func_dec\(idx\)\s*\{.*?\n\}/s;
-      clean = clean.replace(decoderPattern, "");
-
-      clean = clean.replace(/\?\.\[func_dec\((\d+)\)\]/g, (_, idx) => {
-        const val = decodedStrings[parseInt(idx, 10)];
-        return isValidJsIdentifier(val) ? `?.${val}` : `?.[${JSON.stringify(val)}]`;
-      });
-
-      clean = clean.replace(/([\w\$\)\]])\[func_dec\((\d+)\)\]/g, (_, prefix, idx) => {
-        const val = decodedStrings[parseInt(idx, 10)];
-        return isValidJsIdentifier(val) ? `${prefix}.${val}` : `${prefix}[${JSON.stringify(val)}]`;
-      });
-
-      clean = clean.replace(/\[func_dec\((\d+)\)\]\s*:/g, (_, idx) => {
-        const val = decodedStrings[parseInt(idx, 10)];
-        return isValidJsIdentifier(val) ? `${val}:` : `${JSON.stringify(val)}:`;
-      });
-
-      clean = clean.replace(/func_dec\((\d+)\)/g, (_, idx) => {
-        const val = decodedStrings[parseInt(idx, 10)];
-        return JSON.stringify(val);
-      });
-
-      return clean.trim();
+      return code;
     }
 
-    // مبهم‌ساز هوشمند و بدون خطای نحو
-    function obfuscateWorkerCode(code) {
-      // تفکیک هدر BPB در صورت وجود
-      let prefixHeader = "";
-      const bpbMatch = code.match(/Object\.assign\(globalThis,\s*(\{[\s\S]*?\})\);/);
-      if (bpbMatch) {
-        prefixHeader = bpbMatch[0] + "\n";
-        code = code.slice(bpbMatch.index + bpbMatch[0].length);
-      }
-
-      const stringTable = [];
-      const stringIndexMap = new Map();
-
-      function getOrAddString(strContent) {
-        if (stringIndexMap.has(strContent)) {
-          return stringIndexMap.get(strContent);
-        }
-        const idx = stringTable.length;
-        stringTable.push(encodeStringToTable(strContent, XOR_KEY));
-        stringIndexMap.set(strContent, idx);
-        return idx;
-      }
-
-      let i = 0;
-      const len = code.length;
-      let output = "";
-
-      while (i < len) {
-        const char = code[i];
-        const nextChar = i + 1 < len ? code[i + 1] : "";
-
-        if (char === "/" && nextChar === "/") {
-          const end = code.indexOf("\n", i);
-          if (end === -1) { output += code.slice(i); break; }
-          output += code.slice(i, end);
-          i = end;
-          continue;
-        }
-
-        if (char === "/" && nextChar === "*") {
-          const end = code.indexOf("*/", i + 2);
-          if (end === -1) { output += code.slice(i); break; }
-          output += code.slice(i, end + 2);
-          i = end + 2;
-          continue;
-        }
-
-        if (char === "`") {
-          let end = i + 1;
-          while (end < len) {
-            if (code[end] === "\\") end += 2;
-            else if (code[end] === "`") { end++; break; }
-            else end++;
-          }
-          output += code.slice(i, end);
-          i = end;
-          continue;
-        }
-
-        if (char === "/") {
-          const trimmed = output.trimEnd();
-          const lastChar = trimmed.slice(-1);
-          const isRegex = !lastChar || "(=:[,!&|?;{}~^+*%-".includes(lastChar) || /(?:return|case|delete|throw|typeof)\s*$/.test(trimmed);
-
-          if (isRegex) {
-            let end = i + 1;
-            let inClass = false;
-            while (end < len) {
-              if (code[end] === "\\") end += 2;
-              else if (code[end] === "[" && !inClass) { inClass = true; end++; }
-              else if (code[end] === "]" && inClass) { inClass = false; end++; }
-              else if (code[end] === "/" && !inClass) {
-                end++;
-                while (end < len && /[gimsuy]/.test(code[end])) end++;
-                break;
-              } else end++;
-            }
-            output += code.slice(i, end);
-            i = end;
-            continue;
-          }
-        }
-
-        if (char === '"' || char === "'") {
-          const quote = char;
-          const strStart = i;
-          let strEnd = i + 1;
-
-          while (strEnd < len) {
-            if (code[strEnd] === "\\") strEnd += 2;
-            else if (code[strEnd] === quote) { strEnd++; break; }
-            else if (code[strEnd] === "\n") break;
-            else strEnd++;
-          }
-
-          const strLiteral = code.slice(strStart, strEnd);
-
-          let rawVal = null;
-          try {
-            rawVal = quote === '"'
-              ? JSON.parse(strLiteral)
-              : JSON.parse(`"${strLiteral.slice(1, -1).replace(/\\'/g, "'").replace(/"/g, '\\"')}"`);
-          } catch {
-            rawVal = strLiteral.slice(1, -1);
-          }
-
-          const prevTrimmed = output.trimEnd();
-          const isImportExport = /(?:from|import)\s*$/.test(prevTrimmed);
-          const isDirective = rawVal === "use strict";
-
-          if (isImportExport || isDirective || !rawVal || rawVal.length === 0) {
-            output += strLiteral;
-            i = strEnd;
-            continue;
-          }
-
-          let k = strEnd;
-          while (k < len && (code[k] === " " || code[k] === "\t" || code[k] === "\r" || code[k] === "\n")) k++;
-          const isFollowedByColon = (code[k] === ":" && code[k + 1] !== ":");
-          const lastToken = prevTrimmed.slice(-1);
-          const isTernaryOrCondition = lastToken === "?" || /(?:case)\s*$/.test(prevTrimmed);
-
-          if (isFollowedByColon && !isTernaryOrCondition) {
-            output += strLiteral;
-          } else {
-            const idx = getOrAddString(rawVal);
-            output += `func_dec(${idx})`;
-          }
-
-          i = strEnd;
-          continue;
-        }
-
-        output += char;
-        i++;
-      }
-
-      const runtimeHeader = `// @ts-nocheck
-const _0x_key = ${XOR_KEY};
-const _0x_tbl = ${JSON.stringify(stringTable)};
-const _0x_cache = new Map();
-function func_dec(idx) {
-  if (_0x_cache.has(idx)) return _0x_cache.get(idx);
-  const raw = atob(_0x_tbl[idx]);
-  let out = "";
-  for (let i = 0; i < raw.length; i++) {
-    out += String.fromCharCode(raw.charCodeAt(i) ^ (_0x_key ^ (i % 11)));
-  }
-  try {
-    out = decodeURIComponent(escape(out));
-  } catch (_) {}
-  _0x_cache.set(idx, out);
-  return out;
-}
-`;
-
-      return runtimeHeader + "\n" + prefixHeader + output;
-    }
-
-    // --- بارگذاری اولیه و تنظیمات صفحه ---
     window.addEventListener('DOMContentLoaded', () => {
       const savedAcc = localStorage.getItem('_cf_acc_enc');
       const savedTok = localStorage.getItem('_cf_tok_enc');
@@ -539,13 +307,17 @@ function func_dec(idx) {
       const pUrl = getParam('script_url', 'scriptUrl', 'url');
       const pD1 = getParam('d1_name', 'd1Name', 'd1');
       const pBinding = getParam('binding_name', 'bindingName', 'binding');
-      const pAction = getParam('action', 'codeAction');
+      const pObf = getParam('obfuscate', 'enableObfuscation');
       const pRecreate = getParam('recreate', 'rebuild', 'clean');
+      const pBpb = getParam('bpb', 'isBpb');
 
       if (pAcc) document.getElementById('accountId').value = pAcc;
       if (pTok) document.getElementById('apiToken').value = pTok;
       if (pWorker) document.getElementById('workerName').value = pWorker;
-      if (pUrl) document.getElementById('scriptUrl').value = pUrl;
+      if (pUrl) {
+        document.getElementById('scriptUrl').value = pUrl;
+        checkBpbUrl(pUrl);
+      }
 
       if (pD1 || pBinding) {
         document.getElementById('enableD1').checked = true;
@@ -554,14 +326,28 @@ function func_dec(idx) {
         if (pBinding) document.getElementById('bindingName').value = pBinding;
       }
 
-      if (pAction) {
-        const radio = document.querySelector(`input[name="codeAction"][value="${pAction}"]`);
-        if (radio) radio.checked = true;
+      if (pObf !== null) {
+        document.getElementById('enableObfuscation').checked = (pObf === 'true' || pObf === '1');
       }
 
       if (pRecreate !== null) {
         document.getElementById('recreateWorker').checked = (pRecreate === 'true' || pRecreate === '1');
       }
+
+      if (pBpb !== null) {
+        document.getElementById('isBpb').checked = (pBpb === 'true' || pBpb === '1');
+      }
+    });
+
+    function checkBpbUrl(urlStr) {
+      const lower = (urlStr || '').toLowerCase();
+      if (lower.includes('bpb') || lower.includes('panel-html') || lower.includes('bia-pain-bache')) {
+        document.getElementById('isBpb').checked = true;
+      }
+    }
+
+    document.getElementById('scriptUrl').addEventListener('input', (e) => {
+      checkBpbUrl(e.target.value);
     });
 
     function saveOrClearCredentials() {
@@ -619,18 +405,6 @@ function func_dec(idx) {
       });
     }
 
-    function downloadFile(content, fileName) {
-      const blob = new Blob([content], { type: 'application/javascript;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }
-
     let currentStep = 1;
     const totalSteps = 4;
 
@@ -658,13 +432,8 @@ function func_dec(idx) {
 
       if (currentStep === 4) {
         document.getElementById('reviewWorkerName').innerText = document.getElementById('workerName').value || '-';
-        const actionVal = document.querySelector('input[name="codeAction"]:checked').value;
-        const actionLabels = {
-          raw: 'کد خام (بدون دستکاری)',
-          obfuscate: 'مبهم‌سازی با جدول XOR',
-          deobfuscate: 'رمزگشایی (تبدیل به کد خوانا)'
-        };
-        document.getElementById('reviewAction').innerText = actionLabels[actionVal] || actionVal;
+        document.getElementById('reviewObfuscation').innerText = document.getElementById('enableObfuscation').checked ? 'فعال (رمزگذاری با XOR)' : 'غیرفعال (کد خام)';
+        document.getElementById('reviewBpb').innerText = document.getElementById('isBpb').checked ? 'فعال (رمزگشایی Gzip در مرورگر)' : 'غیرفعال (ورکر عادی)';
         document.getElementById('reviewRecreate').innerText = document.getElementById('recreateWorker').checked ? 'نصب مجدد از صفر (Clean Rebuild)' : 'بروزرسانی مستقیم ورکر';
         const d1Active = document.getElementById('enableD1').checked;
         document.getElementById('reviewD1Status').innerText = d1Active 
@@ -707,7 +476,6 @@ function func_dec(idx) {
       }
     }
 
-    // ارسال فرم با پردازش در مرورگر کاربر (Zero Error 1102)
     document.getElementById('wizardForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       saveOrClearCredentials();
@@ -717,7 +485,7 @@ function func_dec(idx) {
       const prevBtn = document.getElementById('prevBtn');
 
       output.className = 'mt-4 p-4 rounded-xl text-xs font-mono whitespace-pre-wrap leading-relaxed bg-slate-950 border border-slate-800 text-slate-300';
-      output.innerHTML = '۱/۳: در حال دریافت فایل سورس کد...';
+      output.innerHTML = 'در حال ارتباط با بک‌اند کلودفلر، پردازش و استقرار ورکر... لطفاً شکیبا باشید.';
       output.classList.remove('hidden');
 
       submitBtn.disabled = true;
@@ -725,43 +493,39 @@ function func_dec(idx) {
       submitBtn.classList.add('opacity-50');
 
       const scriptUrl = document.getElementById('scriptUrl').value.trim();
-      const codeAction = document.querySelector('input[name="codeAction"]:checked').value;
-      let rawCode = '';
+      const isBpbChecked = document.getElementById('isBpb').checked;
+      let clientDecodedScript = null;
 
       try {
-        // الف) دانلود مستقیم توسط مرورگر با فال‌بک به اندپوینت سرور
-        try {
-          const res = await fetch(scriptUrl);
-          if (!res.ok) throw new Error();
-          rawCode = await res.text();
-        } catch {
-          output.innerHTML = '۱/۳: اتصال مستقیم مرورگر ناموفق بود. در حال دریافت امن از طریق پروکسی کلودفلر...';
-          const proxyRes = await fetch(`/api/raw?url=${encodeURIComponent(scriptUrl)}`);
-          if (!proxyRes.ok) throw new Error('دانلود فایل سورس با شکست مواجه شد.');
-          rawCode = await proxyRes.text();
+        // اگر ورکر BPB انتخاب شده بود، سورس فشرده آن در مرورگر کاربر باز می‌شود تا سرور ارور 1102 ندهد
+        if (isBpbChecked) {
+          output.innerHTML = 'در حال دریافت و باز کردن سورس فشرده BPB در مرورگر شما...';
+          try {
+            let bpbRaw = '';
+            try {
+              const r = await fetch(scriptUrl);
+              bpbRaw = await r.text();
+            } catch {
+              const r = await fetch(`/api/raw?url=${encodeURIComponent(scriptUrl)}`);
+              bpbRaw = await r.text();
+            }
+            clientDecodedScript = await decodeBpbInBrowser(bpbRaw);
+          } catch (bpbErr) {
+            console.warn('تلاش برای دیکود BPB با شکست مواجه شد، ارسال به روال عادی...');
+          }
         }
 
-        // ب) پردازش سورس (دیکود یا انکود) به صورت محلی در مرورگر
-        let processedCode = rawCode;
-        if (codeAction === 'deobfuscate') {
-          output.innerHTML = '۲/۳: در حال رمزگشایی سورس و باز کردن فشرده‌سازی در مرورگر شما...';
-          await new Promise(r => setTimeout(r, 20));
-          processedCode = await deobfuscateWorkerCode(rawCode);
-        } else if (codeAction === 'obfuscate') {
-          output.innerHTML = '۲/۳: در حال مبهم‌سازی کدهای سورس با جدول XOR در مرورگر شما...';
-          await new Promise(r => setTimeout(r, 20));
-          processedCode = obfuscateWorkerCode(rawCode);
-        }
-
-        // ج) ارسال کدهای نهایی به سرور برای آپلود بدون مصرف CPU
-        output.innerHTML = '۳/۳: در حال اتصال به کلودفلر و استقرار نهایی ورکر...';
+        output.innerHTML = 'در حال استقرار و بارگذاری روی کلودفلر...';
 
         const payload = {
           accountId: document.getElementById('accountId').value.trim(),
           apiToken: document.getElementById('apiToken').value.trim(),
           workerName: document.getElementById('workerName').value.trim(),
-          scriptCode: processedCode,
+          scriptUrl: scriptUrl,
+          decodedScript: clientDecodedScript, // سورس بازشده در صورت استفاده از BPB
+          enableObfuscation: document.getElementById('enableObfuscation').checked,
           recreateWorker: document.getElementById('recreateWorker').checked,
+          isBpb: isBpbChecked,
           d1Name: document.getElementById('enableD1').checked ? document.getElementById('d1Name').value.trim() : null,
           bindingName: document.getElementById('enableD1').checked ? document.getElementById('bindingName').value.trim() : null,
         };
@@ -779,11 +543,10 @@ function func_dec(idx) {
         try {
           result = await response.json();
         } catch {
-          throw new Error(`پاسخ سرور در قالب JSON نبود (کد: ${response.status})`);
+          throw new Error(`پاسخ سرور در قالب JSON نبود (کد وضعیت: ${response.status})`);
         }
 
         if (result.success) {
-          window.lastProcessedCode = processedCode;
           output.className = 'mt-4 p-4 rounded-xl text-xs font-sans leading-relaxed bg-emerald-950/60 border border-emerald-700 text-emerald-200';
           
           let html = `
@@ -792,14 +555,10 @@ function func_dec(idx) {
             </div>
             <div class="space-y-1.5 text-xs">
               <div>نام ورکر: <span class="font-mono text-white font-semibold">${result.workerName}</span></div>
-              <div>عملیات روی کد: <span class="text-white font-semibold">${codeAction === 'deobfuscate' ? 'رمزگشایی کامل (Deobfuscated)' : (codeAction === 'obfuscate' ? 'مبهم‌سازی امن (Obfuscated)' : 'کد دست‌نخورده')}</span></div>
+              <div>وضعیت نصب: <span class="text-white">${result.recreated ? 'حذف و بازسازی مجدد از ابتدا (Clean)' : 'به‌روزرسانی مستقیم'}</span></div>
+              <div>مبهم‌سازی سورس: <span class="text-white">${result.obfuscated ? 'فعال شد' : 'غیرفعال'}</span></div>
+              ${result.bpbDetected ? '<div>نوع ورکر: <span class="text-indigo-300 font-bold">ورکر BPB (رمزگشایی موفق در مرورگر)</span></div>' : ''}
               ${result.d1DatabaseId ? `<div>دیتابیس D1 متصل شد (UUID): <span class="font-mono text-emerald-400">${result.d1DatabaseId}</span></div>` : '<div>دیتابیس D1: بدون دیتابیس</div>'}
-            </div>
-            <div class="mt-3 flex gap-2">
-              <button type="button" onclick="downloadFile(window.lastProcessedCode, '${result.workerName}.js')" class="px-3 py-1.5 bg-emerald-800/60 hover:bg-emerald-700 border border-emerald-600 rounded-lg text-xs font-bold text-white transition flex items-center gap-1">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                دانلود سورس پردازش‌شده
-              </button>
             </div>
           `;
 
