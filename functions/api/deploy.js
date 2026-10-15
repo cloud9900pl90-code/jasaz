@@ -21,25 +21,19 @@ export async function onRequestOptions() {
   });
 }
 
-// موتور مبهم‌ساز جاوااسکریپت (XOR Table)
+// --- موتور مبهم‌ساز سراسری و ایمن جاوااسکریپت (Universal Safe Obfuscator) ---
 const XOR_KEY = 0x4f;
 
 function encodeStringToTable(str, key) {
-  const encoder = new TextEncoder();
-  const rawBytes = encoder.encode(str);
-  const xorBytes = new Uint8Array(rawBytes.length);
-  for (let i = 0; i < rawBytes.length; i++) {
-    xorBytes[i] = rawBytes[i] ^ (key ^ (i % 11));
+  const utf8Str = unescape(encodeURIComponent(str));
+  let out = "";
+  for (let i = 0; i < utf8Str.length; i++) {
+    out += String.fromCharCode(utf8Str.charCodeAt(i) ^ (key ^ (i % 11)));
   }
-  let binary = "";
-  for (let i = 0; i < xorBytes.byteLength; i++) {
-    binary += String.fromCharCode(xorBytes[i]);
-  }
-  return btoa(binary);
+  return btoa(out);
 }
 
 function obfuscateWorkerCode(code) {
-  const stringRegex = /(["'])(?:(?=(\\?))\2[\s\S])*?\1/g;
   const stringTable = [];
   const stringIndexMap = new Map();
 
@@ -53,18 +47,158 @@ function obfuscateWorkerCode(code) {
     return idx;
   }
 
-  const transformedCode = code.replace(stringRegex, (match) => {
-    if (match.includes("from ") || match.length <= 2) return match;
-    try {
-      const rawContent = JSON.parse(match.startsWith("'") ? `"${match.slice(1, -1).replace(/"/g, '\\"')}"` : match);
-      if (rawContent.length < 2) return match;
-      const idx = getOrAddString(rawContent);
-      return `func_dec(${idx})`;
-    } catch {
-      return match;
-    }
-  });
+  let i = 0;
+  const len = code.length;
+  let output = "";
 
+  while (i < len) {
+    const char = code[i];
+    const nextChar = i + 1 < len ? code[i + 1] : "";
+
+    // ۱. نادیده گرفتن کامنت‌های تک‌خطی (جلوگیری از تداخل با کلماتی مثل don't)
+    if (char === "/" && nextChar === "/") {
+      const end = code.indexOf("\n", i);
+      if (end === -1) {
+        output += code.slice(i);
+        break;
+      }
+      output += code.slice(i, end);
+      i = end;
+      continue;
+    }
+
+    // ۲. نادیده گرفتن کامنت‌های چندخطی
+    if (char === "/" && nextChar === "*") {
+      const end = code.indexOf("*/", i + 2);
+      if (end === -1) {
+        output += code.slice(i);
+        break;
+      }
+      output += code.slice(i, end + 2);
+      i = end + 2;
+      continue;
+    }
+
+    // ۳. نادیده گرفتن تمپلیت استرینگ‌های بک‌تیک (``) برای جلوگیری از خرابی ${...}
+    if (char === "`") {
+      let end = i + 1;
+      while (end < len) {
+        if (code[end] === "\\" ) {
+          end += 2;
+        } else if (code[end] === "`") {
+          end++;
+          break;
+        } else {
+          end++;
+        }
+      }
+      output += code.slice(i, end);
+      i = end;
+      continue;
+    }
+
+    // ۴. تشخیص عبارت باقاعده (Regex Literal)
+    if (char === "/") {
+      const trimmed = output.trimEnd();
+      const lastChar = trimmed.slice(-1);
+      const isRegex = !lastChar || "(=:[,!&|?;{}~^+*%-".includes(lastChar) || /(?:return|case|delete|throw|typeof)\s*$/.test(trimmed);
+
+      if (isRegex) {
+        let end = i + 1;
+        let inClass = false;
+        while (end < len) {
+          if (code[end] === "\\") {
+            end += 2;
+          } else if (code[end] === "[" && !inClass) {
+            inClass = true;
+            end++;
+          } else if (code[end] === "]" && inClass) {
+            inClass = false;
+            end++;
+          } else if (code[end] === "/" && !inClass) {
+            end++;
+            while (end < len && /[gimsuy]/.test(code[end])) end++;
+            break;
+          } else {
+            end++;
+          }
+        }
+        output += code.slice(i, end);
+        i = end;
+        continue;
+      }
+    }
+
+    // ۵. پردازش رشته‌ها (' یا ")
+    if (char === '"' || char === "'") {
+      const quote = char;
+      const strStart = i;
+      let strEnd = i + 1;
+
+      while (strEnd < len) {
+        if (code[strEnd] === "\\") {
+          strEnd += 2;
+        } else if (code[strEnd] === quote) {
+          strEnd++;
+          break;
+        } else if (code[strEnd] === "\n") {
+          // رشته‌های بدون بستن نقل‌قول در خط بعدی معتبر نیستند
+          break;
+        } else {
+          strEnd++;
+        }
+      }
+
+      const strLiteral = code.slice(strStart, strEnd);
+
+      // استخراج مقدار واقعی رشته
+      let rawVal = null;
+      try {
+        rawVal = quote === '"'
+          ? JSON.parse(strLiteral)
+          : JSON.parse(`"${strLiteral.slice(1, -1).replace(/\\'/g, "'").replace(/"/g, '\\"')}"`);
+      } catch {
+        rawVal = strLiteral.slice(1, -1);
+      }
+
+      // الف: بررسی عدم تغییر ماژول‌های import و export
+      const prevTrimmed = output.trimEnd();
+      const isImportExportSpecifier = /(?:from|import)\s*$/.test(prevTrimmed);
+      const isDirective = rawVal === "use strict";
+
+      if (isImportExportSpecifier || isDirective || rawVal.length === 0) {
+        output += strLiteral;
+        i = strEnd;
+        continue;
+      }
+
+      // ب: بررسی اینکه آیا این رشته کلید یک آبجکت است؟ (مثلاً "headers": ...)
+      let lookAhead = strEnd;
+      while (lookAhead < len && (code[lookAhead] === " " || code[lookAhead] === "\t" || code[lookAhead] === "\r" || code[lookAhead] === "\n")) {
+        lookAhead++;
+      }
+      const isObjectKey = code[lookAhead] === ":" && code[lookAhead + 1] !== ":";
+
+      const idx = getOrAddString(rawVal);
+
+      if (isObjectKey) {
+        // کلیدهای آبجکت با براکت معتبر جایگزین می‌شوند
+        output += `[func_dec(${idx})]`;
+      } else {
+        // مقادیر معمولی جایگزین می‌شوند
+        output += `func_dec(${idx})`;
+      }
+
+      i = strEnd;
+      continue;
+    }
+
+    // در غیر این صورت کاراکتر را مستقیماً عبور می‌دهیم
+    output += char;
+    i++;
+  }
+
+  // اضافه کردن جدول رمزگشایی یونیکد و کش به ابتدای کد
   const runtimeHeader = `// @ts-nocheck
 const _0x_key = ${XOR_KEY};
 const _0x_tbl = ${JSON.stringify(stringTable)};
@@ -76,13 +210,18 @@ function func_dec(idx) {
   for (let i = 0; i < raw.length; i++) {
     out += String.fromCharCode(raw.charCodeAt(i) ^ (_0x_key ^ (i % 11)));
   }
+  try {
+    out = decodeURIComponent(escape(out));
+  } catch (_) {}
   _0x_cache.set(idx, out);
   return out;
 }
 `;
-  return runtimeHeader + "\n" + transformedCode;
+
+  return runtimeHeader + "\n" + output;
 }
 
+// --- پردازش استقرار در کلودفلر ---
 export async function onRequestPost({ request }) {
   try {
     let data;
@@ -114,7 +253,7 @@ export async function onRequestPost({ request }) {
       return jsonResponse({ success: false, error: `خطا در دانلود سورس از لینک: ${fetchErr.message}` }, 400);
     }
 
-    // ۲. مبهم‌سازی در صورت انتخاب
+    // ۲. مبهم‌سازی با موتور عمومی جدید
     if (enableObfuscation) {
       try {
         workerScript = obfuscateWorkerCode(workerScript);
@@ -165,7 +304,7 @@ export async function onRequestPost({ request }) {
       }
     }
 
-    // ۴. در صورت فعال بودن Recreate، ابتدا ورکر قبلی حذف می‌شود
+    // ۴. در صورت درخواست Recreate، ورکر قبلی حذف می‌شود
     if (recreateWorker) {
       try {
         await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/${workerName}`, {
@@ -173,7 +312,7 @@ export async function onRequestPost({ request }) {
           headers: cfHeaders,
         });
       } catch {
-        // نادیده گرفتن در صورتی که ورکر وجود نداشته باشد
+        // نادیده گرفتن در صورت عدم وجود ورکر
       }
     }
 
@@ -200,7 +339,7 @@ export async function onRequestPost({ request }) {
       return jsonResponse({ success: false, error: `کلودفلر ورکر را نپذیرفت: ${JSON.stringify(uploadData.errors)}` }, 400);
     }
 
-    // ۶. فعال‌سازی ساب‌دامین و واکشی آدرس اختصاصی
+    // ۶. فعال‌سازی دامنه و استخراج آدرس
     await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/${workerName}/subdomain`, {
       method: "POST",
       headers: { ...cfHeaders, "Content-Type": "application/json" },
@@ -217,7 +356,7 @@ export async function onRequestPost({ request }) {
         workerUrl = `https://${workerName}.${subData.result.subdomain}.workers.dev`;
       }
     } catch {
-      // نادیده گرفتن در صورت بروز خطای فرعی در واکشی ساب‌دامین
+      // نادیده گرفتن خطای فرعی ساب‌دامین
     }
 
     return jsonResponse({
