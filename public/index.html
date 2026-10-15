@@ -119,6 +119,23 @@
           </label>
         </div>
 
+        <!-- سوئیچ پشتیبانی از ورکر BPB -->
+        <div class="pt-1">
+          <label class="flex items-center justify-between p-3.5 bg-slate-950 border border-slate-800 rounded-xl cursor-pointer hover:border-slate-700 transition">
+            <div class="flex flex-col ml-3">
+              <span class="text-sm font-medium text-slate-200 flex items-center gap-1.5">
+                <span>حالت اختصاصی ورکر BPB</span>
+                <span class="text-[10px] bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 px-1.5 py-0.5 rounded font-mono font-bold">BPB Panel</span>
+              </span>
+              <span class="text-[11px] text-slate-500">تفکیک صفحات فشرده HTML از کدهای اجرایی برای جلوگیری از ارور در پنل BPB</span>
+            </div>
+            <div class="relative shrink-0 flex items-center">
+              <input type="checkbox" id="isBpb" class="sr-only peer">
+              <div class="w-11 h-6 bg-slate-800 rounded-full peer peer-checked:bg-orange-500 transition-colors after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:-translate-x-5"></div>
+            </div>
+          </label>
+        </div>
+
         <!-- سوئیچ حذف و ساخت مجدد از ابتدا (Clean Rebuild) -->
         <div class="pt-1">
           <label class="flex items-center justify-between p-3.5 bg-slate-950 border border-slate-800 rounded-xl cursor-pointer hover:border-slate-700 transition">
@@ -174,6 +191,10 @@
           <div class="flex justify-between py-1 border-b border-slate-900">
             <span class="text-slate-500">وضعیت مبهم‌سازی (Obfuscation):</span>
             <span id="reviewObfuscation" class="font-mono text-slate-300">-</span>
+          </div>
+          <div class="flex justify-between py-1 border-b border-slate-900">
+            <span class="text-slate-500">حالت ورکر BPB:</span>
+            <span id="reviewBpb" class="font-mono text-slate-300">-</span>
           </div>
           <div class="flex justify-between py-1 border-b border-slate-900">
             <span class="text-slate-500">نحوه استقرار ورکر:</span>
@@ -267,11 +288,15 @@
       const pBinding = getParam('binding_name', 'bindingName', 'binding');
       const pObf = getParam('obfuscate', 'enableObfuscation');
       const pRecreate = getParam('recreate', 'rebuild', 'clean');
+      const pBpb = getParam('bpb', 'isBpb');
 
       if (pAcc) document.getElementById('accountId').value = pAcc;
       if (pTok) document.getElementById('apiToken').value = pTok;
       if (pWorker) document.getElementById('workerName').value = pWorker;
-      if (pUrl) document.getElementById('scriptUrl').value = pUrl;
+      if (pUrl) {
+        document.getElementById('scriptUrl').value = pUrl;
+        checkBpbUrl(pUrl);
+      }
 
       if (pD1 || pBinding) {
         document.getElementById('enableD1').checked = true;
@@ -287,6 +312,22 @@
       if (pRecreate !== null) {
         document.getElementById('recreateWorker').checked = (pRecreate === 'true' || pRecreate === '1');
       }
+
+      if (pBpb !== null) {
+        document.getElementById('isBpb').checked = (pBpb === 'true' || pBpb === '1');
+      }
+    });
+
+    // بررسی آدرس سورس برای فعال‌سازی خودکار حالت BPB
+    function checkBpbUrl(urlStr) {
+      const lower = (urlStr || '').toLowerCase();
+      if (lower.includes('bpb') || lower.includes('panel-html') || lower.includes('bia-pain-bache')) {
+        document.getElementById('isBpb').checked = true;
+      }
+    }
+
+    document.getElementById('scriptUrl').addEventListener('input', (e) => {
+      checkBpbUrl(e.target.value);
     });
 
     function saveOrClearCredentials() {
@@ -372,6 +413,7 @@
       if (currentStep === 4) {
         document.getElementById('reviewWorkerName').innerText = document.getElementById('workerName').value || '-';
         document.getElementById('reviewObfuscation').innerText = document.getElementById('enableObfuscation').checked ? 'فعال (رمزگذاری با XOR)' : 'غیرفعال (کد خام)';
+        document.getElementById('reviewBpb').innerText = document.getElementById('isBpb').checked ? 'فعال (تفکیک خودکار فایل‌های فشرده)' : 'غیرفعال (ورکر عادی)';
         document.getElementById('reviewRecreate').innerText = document.getElementById('recreateWorker').checked ? 'نصب مجدد از صفر (Clean Rebuild)' : 'بروزرسانی مستقیم ورکر';
         const d1Active = document.getElementById('enableD1').checked;
         document.getElementById('reviewD1Status').innerText = d1Active 
@@ -437,6 +479,7 @@
         scriptUrl: document.getElementById('scriptUrl').value.trim(),
         enableObfuscation: document.getElementById('enableObfuscation').checked,
         recreateWorker: document.getElementById('recreateWorker').checked,
+        isBpb: document.getElementById('isBpb').checked,
         d1Name: document.getElementById('enableD1').checked ? document.getElementById('d1Name').value.trim() : null,
         bindingName: document.getElementById('enableD1').checked ? document.getElementById('bindingName').value.trim() : null,
       };
@@ -469,6 +512,7 @@
               <div>نام ورکر: <span class="font-mono text-white font-semibold">${result.workerName}</span></div>
               <div>وضعیت نصب: <span class="text-white">${result.recreated ? 'حذف و بازسازی مجدد از ابتدا (Clean)' : 'به‌روزرسانی مستقیم'}</span></div>
               <div>مبهم‌سازی سورس: <span class="text-white">${result.obfuscated ? 'فعال شد' : 'غیرفعال'}</span></div>
+              ${result.bpbDetected ? '<div>نوع ساختار ورکر: <span class="text-indigo-300 font-bold">ورکر BPB (تفکیک موفق دارایی‌ها)</span></div>' : ''}
               ${result.d1DatabaseId ? `<div>دیتابیس D1 متصل شد (UUID): <span class="font-mono text-emerald-400">${result.d1DatabaseId}</span></div>` : '<div>دیتابیس D1: بدون دیتابیس</div>'}
             </div>
           `;
