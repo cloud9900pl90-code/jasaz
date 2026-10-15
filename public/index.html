@@ -317,14 +317,18 @@
         }
       });
 
-      if (type !== 'custom') {
-        document.getElementById('scriptUrl').value = p.url;
-        document.getElementById('bindingName').value = p.binding;
-        document.getElementById('enableObfuscation').checked = p.obfuscate;
-        document.getElementById('recreateWorker').checked = p.recreate;
-        document.getElementById('enableD1').checked = p.enableD1;
-        toggleD1Fields();
+      // بارگذاری کامل تنظیمات الگو یا بازنشانی فیلدها به حالت پیش‌فرض برای گزینه سفارشی
+      document.getElementById('scriptUrl').value = p.url;
+      document.getElementById('bindingName').value = p.binding;
+      document.getElementById('enableObfuscation').checked = p.obfuscate;
+      document.getElementById('recreateWorker').checked = p.recreate;
+      document.getElementById('enableD1').checked = p.enableD1;
+      
+      if (type === 'custom') {
+        document.getElementById('d1Name').value = '';
       }
+      
+      toggleD1Fields();
     }
 
     window.addEventListener('DOMContentLoaded', () => {
