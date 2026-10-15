@@ -21,7 +21,7 @@ export async function onRequestOptions() {
   });
 }
 
-// موتور مبهم‌ساز جاوااسکریپت (XOR Table)
+// --- موتور مبهم‌ساز هوشمند و بدون خطا برای انواع ورکرها (Zeus, Nahan, etc.) ---
 const XOR_KEY = 0x4f;
 
 function encodeStringToTable(str, key) {
@@ -55,34 +55,49 @@ function obfuscateWorkerCode(code) {
     const char = code[i];
     const nextChar = i + 1 < len ? code[i + 1] : "";
 
+    // ۱. نادیده گرفتن کامل کامنت‌های تک‌خطی (//)
     if (char === "/" && nextChar === "/") {
       const end = code.indexOf("\n", i);
-      if (end === -1) { output += code.slice(i); break; }
-      output += code.slice(i, end);
-      i = end;
-      continue;
-    }
-
-    if (char === "/" && nextChar === "*") {
-      const end = code.indexOf("*/", i + 2);
-      if (end === -1) { output += code.slice(i); break; }
-      output += code.slice(i, end + 2);
-      i = end + 2;
-      continue;
-    }
-
-    if (char === "`") {
-      let end = i + 1;
-      while (end < len) {
-        if (code[end] === "\\") end += 2;
-        else if (code[end] === "`") { end++; break; }
-        else end++;
+      if (end === -1) {
+        output += code.slice(i);
+        break;
       }
       output += code.slice(i, end);
       i = end;
       continue;
     }
 
+    // ۲. نادیده گرفتن کامل کامنت‌های چندخطی (/* ... */)
+    if (char === "/" && nextChar === "*") {
+      const end = code.indexOf("*/", i + 2);
+      if (end === -1) {
+        output += code.slice(i);
+        break;
+      }
+      output += code.slice(i, end + 2);
+      i = end + 2;
+      continue;
+    }
+
+    // ۳. حفظ ۱۰۰٪ تمپلیت استرینگ‌ها (بک‌تیک ``): قالب‌های HTML و SVG پنل هرگز خراب نمی‌شوند!
+    if (char === "`") {
+      let end = i + 1;
+      while (end < len) {
+        if (code[end] === "\\") {
+          end += 2;
+        } else if (code[end] === "`") {
+          end++;
+          break;
+        } else {
+          end++;
+        }
+      }
+      output += code.slice(i, end);
+      i = end;
+      continue;
+    }
+
+    // ۴. تشخیص و عبور ایمن عبارات باقاعده (RegExp Literals)
     if (char === "/") {
       const trimmed = output.trimEnd();
       const lastChar = trimmed.slice(-1);
@@ -92,14 +107,21 @@ function obfuscateWorkerCode(code) {
         let end = i + 1;
         let inClass = false;
         while (end < len) {
-          if (code[end] === "\\") end += 2;
-          else if (code[end] === "[" && !inClass) { inClass = true; end++; }
-          else if (code[end] === "]" && inClass) { inClass = false; end++; }
-          else if (code[end] === "/" && !inClass) {
+          if (code[end] === "\\") {
+            end += 2;
+          } else if (code[end] === "[" && !inClass) {
+            inClass = true;
+            end++;
+          } else if (code[end] === "]" && inClass) {
+            inClass = false;
+            end++;
+          } else if (code[end] === "/" && !inClass) {
             end++;
             while (end < len && /[gimsuy]/.test(code[end])) end++;
             break;
-          } else end++;
+          } else {
+            end++;
+          }
         }
         output += code.slice(i, end);
         i = end;
@@ -107,16 +129,23 @@ function obfuscateWorkerCode(code) {
       }
     }
 
+    // ۵. پردازش رشته‌های استاندارد ('...' یا "...")
     if (char === '"' || char === "'") {
       const quote = char;
       const strStart = i;
       let strEnd = i + 1;
 
       while (strEnd < len) {
-        if (code[strEnd] === "\\") strEnd += 2;
-        else if (code[strEnd] === quote) { strEnd++; break; }
-        else if (code[strEnd] === "\n") break;
-        else strEnd++;
+        if (code[strEnd] === "\\") {
+          strEnd += 2;
+        } else if (code[strEnd] === quote) {
+          strEnd++;
+          break;
+        } else if (code[strEnd] === "\n") {
+          break;
+        } else {
+          strEnd++;
+        }
       }
 
       const strLiteral = code.slice(strStart, strEnd);
@@ -131,6 +160,8 @@ function obfuscateWorkerCode(code) {
       }
 
       const prevTrimmed = output.trimEnd();
+
+      // الف: عدم تغییر در ایمپورت‌ها و اکسپورت‌های ماژولار (import ... from "...")
       const isImportExport = /(?:from|import)\s*$/.test(prevTrimmed);
       const isDirective = rawVal === "use strict";
 
@@ -140,15 +171,22 @@ function obfuscateWorkerCode(code) {
         continue;
       }
 
+      // ب: تشخیص دقیق کلید آبجکت و جلوگیری از اشتباه گرفتن شرط سه‌گانه (? :)
       let k = strEnd;
-      while (k < len && (code[k] === " " || code[k] === "\t" || code[k] === "\r" || code[k] === "\n")) k++;
+      while (k < len && (code[k] === " " || code[k] === "\t" || code[k] === "\r" || code[k] === "\n")) {
+        k++;
+      }
       const isFollowedByColon = (code[k] === ":" && code[k + 1] !== ":");
+
+      // بررسی توکن قبلی برای تشخیص شرط سه‌گانه
       const lastToken = prevTrimmed.slice(-1);
       const isTernaryOrCondition = lastToken === "?" || /(?:case)\s*$/.test(prevTrimmed);
 
       if (isFollowedByColon && !isTernaryOrCondition) {
+        // کلید یک آبجکت است (مثل "Content-Type": ...). آن را بدون براکت خراب‌کننده نگه می‌داریم تا سینتکس ۱۰۰٪ معتبر بماند
         output += strLiteral;
       } else {
+        // مقدار معمولی یا شرط سه‌گانه است (به صورت func_dec انکود می‌شود بدون اینکه آرایه شود)
         const idx = getOrAddString(rawVal);
         output += `func_dec(${idx})`;
       }
@@ -161,6 +199,7 @@ function obfuscateWorkerCode(code) {
     i++;
   }
 
+  // اضافه کردن جدول دیکودر و کش
   const runtimeHeader = `// @ts-nocheck
 const _0x_key = ${XOR_KEY};
 const _0x_tbl = ${JSON.stringify(stringTable)};
@@ -183,6 +222,7 @@ function func_dec(idx) {
   return runtimeHeader + "\n" + output;
 }
 
+// --- پردازش استقرار در کلودفلر ---
 export async function onRequestPost({ request }) {
   try {
     let data;
@@ -192,35 +232,29 @@ export async function onRequestPost({ request }) {
       return jsonResponse({ success: false, error: "قالب داده‌های ارسالی معتبر نیست." }, 400);
     }
 
-    const { accountId, apiToken, workerName, scriptUrl, decodedScript, d1Name, bindingName, enableObfuscation, recreateWorker, isBpb } = data;
+    const { accountId, apiToken, workerName, scriptUrl, d1Name, bindingName, enableObfuscation, recreateWorker } = data;
 
-    if (!accountId || !apiToken || !workerName) {
+    if (!accountId || !apiToken || !workerName || !scriptUrl) {
       return jsonResponse({ success: false, error: "لطفاً تمامی فیلدهای الزامی را پر کنید." }, 400);
     }
 
     const cfHeaders = { Authorization: `Bearer ${apiToken}` };
 
+    // ۱. دانلود سورس کد از گیت‌هاب توسط سرورهای کلودفلر
     let workerScript = "";
-
-    // اگر مرورگر قبلاً سورس BPB را باز کرده بود، مستقیم استفاده می‌شود تا از خطای 1102 جلوگیری شود
-    if (decodedScript) {
-      workerScript = decodedScript;
-    } else {
-      if (!scriptUrl) return jsonResponse({ success: false, error: "آدرس فایل سورس الزامی است." }, 400);
-      try {
-        const scriptRes = await fetch(scriptUrl, {
-          headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) PagesDeployer/1.0" },
-        });
-        if (!scriptRes.ok) {
-          return jsonResponse({ success: false, error: `خطا در دریافت سورس ورکر: ${scriptRes.status}` }, 400);
-        }
-        workerScript = await scriptRes.text();
-      } catch (fetchErr) {
-        return jsonResponse({ success: false, error: `خطا در دانلود سورس: ${fetchErr.message}` }, 400);
+    try {
+      const scriptRes = await fetch(scriptUrl, {
+        headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) PagesDeployer/1.0" },
+      });
+      if (!scriptRes.ok) {
+        return jsonResponse({ success: false, error: `خطا در دریافت سورس ورکر: ${scriptRes.status} ${scriptRes.statusText}` }, 400);
       }
+      workerScript = await scriptRes.text();
+    } catch (fetchErr) {
+      return jsonResponse({ success: false, error: `خطا در دانلود سورس از لینک: ${fetchErr.message}` }, 400);
     }
 
-    // مبهم‌سازی در سرور
+    // ۲. اعمال مبهم‌سازی هوشمند و سازگار با HTML
     if (enableObfuscation) {
       try {
         workerScript = obfuscateWorkerCode(workerScript);
@@ -232,6 +266,7 @@ export async function onRequestPost({ request }) {
     const bindings = [];
     let d1DatabaseId = null;
 
+    // ۳. مدیریت دیتابیس D1
     if (d1Name && bindingName) {
       try {
         const listRes = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/d1/database`, {
@@ -240,7 +275,7 @@ export async function onRequestPost({ request }) {
         const listData = await listRes.json();
 
         if (!listData.success) {
-          return jsonResponse({ success: false, error: `کلید API معتبر نیست یا دسترسی D1 ندارد.` }, 400);
+          return jsonResponse({ success: false, error: `کلید API معتبر نیست یا دسترسی D1 ندارد: ${JSON.stringify(listData.errors)}` }, 400);
         }
 
         const existingDb = listData.result?.find((db) => db.name === d1Name);
@@ -266,19 +301,23 @@ export async function onRequestPost({ request }) {
           id: d1DatabaseId,
         });
       } catch (d1Err) {
-        return jsonResponse({ success: false, error: `خطا در دیتابیس D1: ${d1Err.message}` }, 400);
+        return jsonResponse({ success: false, error: `خطا در برقراری ارتباط با دیتابیس D1: ${d1Err.message}` }, 400);
       }
     }
 
+    // ۴. در صورت فعال بودن Recreate، ابتدا ورکر قبلی حذف می‌شود
     if (recreateWorker) {
       try {
         await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/${workerName}`, {
           method: "DELETE",
           headers: cfHeaders,
         });
-      } catch {}
+      } catch {
+        // نادیده گرفتن
+      }
     }
 
+    // ۵. آپلود ورکر
     const isModule = workerScript.includes("export default") || workerScript.includes("export ");
     const formData = new FormData();
     const metadata = {
@@ -301,6 +340,7 @@ export async function onRequestPost({ request }) {
       return jsonResponse({ success: false, error: `کلودفلر ورکر را نپذیرفت: ${JSON.stringify(uploadData.errors)}` }, 400);
     }
 
+    // ۶. فعال‌سازی ساب‌دامین و استخراج آدرس کامل
     await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/${workerName}/subdomain`, {
       method: "POST",
       headers: { ...cfHeaders, "Content-Type": "application/json" },
@@ -316,7 +356,9 @@ export async function onRequestPost({ request }) {
       if (subData.success && subData.result?.subdomain) {
         workerUrl = `https://${workerName}.${subData.result.subdomain}.workers.dev`;
       }
-    } catch {}
+    } catch {
+      // نادیده گرفتن
+    }
 
     return jsonResponse({
       success: true,
@@ -326,7 +368,6 @@ export async function onRequestPost({ request }) {
       d1DatabaseId,
       obfuscated: !!enableObfuscation,
       recreated: !!recreateWorker,
-      bpbDetected: Boolean(isBpb || decodedScript),
     });
   } catch (err) {
     return jsonResponse({ success: false, error: `خطای سرور: ${err.message}` }, 500);
