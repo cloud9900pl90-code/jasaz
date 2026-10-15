@@ -243,6 +243,7 @@
   </div>
 
   <script>
+    // --- توابع کش امنیتی ---
     const STORAGE_KEY = 0x3b;
 
     function encodeStorage(str) {
@@ -273,7 +274,7 @@
       }
     }
 
-    // الگوهای آماده
+    // --- الگوهای آماده (Presets) ---
     const PRESETS = {
       nahan: {
         url: 'https://raw.githubusercontent.com/itsyebekhe/nahan/refs/heads/main/_worker.encode.js',
@@ -317,13 +318,14 @@
         }
       });
 
-      // بارگذاری کامل تنظیمات الگو یا بازنشانی فیلدها به حالت پیش‌فرض برای گزینه سفارشی
+      // بارگذاری کامل تنظیمات الگو
       document.getElementById('scriptUrl').value = p.url;
       document.getElementById('bindingName').value = p.binding;
       document.getElementById('enableObfuscation').checked = p.obfuscate;
       document.getElementById('recreateWorker').checked = p.recreate;
       document.getElementById('enableD1').checked = p.enableD1;
       
+      // اگر روی سفارشی کلیک شد، نام دیتابیس خالی شود
       if (type === 'custom') {
         document.getElementById('d1Name').value = '';
       }
@@ -331,7 +333,15 @@
       toggleD1Fields();
     }
 
+    // --- بارگذاری اولیه اطلاعات ---
     window.addEventListener('DOMContentLoaded', () => {
+      // ۱. ابتدا فرم ریست شود تا کش مرورگر تداخل ایجاد نکند
+      document.getElementById('wizardForm').reset();
+
+      // ۲. انتخاب پیش‌فرض ناهان (اکنون مطمئنیم که فیلدها پر می‌شوند)
+      selectPreset('nahan');
+
+      // ۳. بازیابی اطلاعات ذخیره‌شده حساب
       const savedAcc = localStorage.getItem('_cf_acc_enc');
       const savedTok = localStorage.getItem('_cf_tok_enc');
 
@@ -341,7 +351,7 @@
         document.getElementById('clearStorageBtn').classList.remove('hidden');
       }
 
-      // خواندن پارامترها از URL
+      // ۴. خواندن پارامترها از لینک و اعمال آن‌ها
       const urlParams = new URLSearchParams(window.location.search);
       const getParam = (...keys) => {
         for (const k of keys) {
@@ -367,13 +377,12 @@
       if (pAcc) document.getElementById('accountId').value = pAcc;
       if (pTok) document.getElementById('apiToken').value = pTok;
       if (pWorker) document.getElementById('workerName').value = pWorker;
+      
       if (pUrl) {
         document.getElementById('scriptUrl').value = pUrl;
-        if (pUrl.includes('nahan')) selectPreset('nahan');
-        else if (pUrl.includes('Z-E-U-S') || pUrl.includes('zeus')) selectPreset('zeus');
       }
 
-      if (pD1 || pBinding) {
+      if (pD1 !== null || pBinding !== null) {
         document.getElementById('enableD1').checked = true;
         toggleD1Fields();
         if (pD1) document.getElementById('d1Name').value = pD1;
@@ -444,6 +453,7 @@
       });
     }
 
+    // --- مدیریت مراحل استپر ---
     let currentStep = 1;
     const totalSteps = 4;
 
@@ -514,6 +524,7 @@
       }
     }
 
+    // --- عملیات نهایی (ارسال به سرور) ---
     document.getElementById('wizardForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       saveOrClearCredentials();
