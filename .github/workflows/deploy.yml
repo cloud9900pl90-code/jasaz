@@ -1,4 +1,4 @@
-name: Deploy Cloudflare Pages
+name: Deploy Cloudflare Pages & Setup Telegram Bot
 
 on:
   push:
@@ -24,13 +24,69 @@ jobs:
       - name: Install Wrangler
         run: npm install -g wrangler
 
-      - name: Deploy to Cloudflare Pages
+      - name: Ensure Pages Project Exists
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          # در صورت عدم وجود پروژه، آن را می‌سازد (اگر وجود داشته باشد ارور نادیده گرفته می‌شود)
           wrangler pages project create jasaz --production-branch=main || true
+
+      - name: Sync Secrets to Cloudflare Pages
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_SECRET_TOKEN: ${{ secrets.TELEGRAM_SECRET_TOKEN }}
+        run: |
+          echo "Setting up environment secrets in Cloudflare Pages..."
+          # مقداردهی سکرت‌ها برای Pages
+          echo "$TELEGRAM_BOT_TOKEN" | wrangler pages secret put BOT_TOKEN --project-name=jasaz
+          echo "$TELEGRAM_SECRET_TOKEN" | wrangler pages secret put BOT_SECRET --project-name=jasaz
+
+      - name: Deploy to Cloudflare Pages
+        id: pages_deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          # دیپلوی و ذخیره لاگ
+          OUTPUT=$(wrangler pages deploy public --project-name=jasaz --commit-dirty=true)
+          echo "$OUTPUT"
+
+          # استخراج دامنه اصلی pages.dev با Regex
+          PAGES_URL=$(echo "$OUTPUT" | grep -o 'https://[^ ]*\.pages\.dev' | head -n 1)
           
-          # استقرار پروژه
-          wrangler pages deploy public --project-name=jasaz --commit-dirty=true
+          # فال‌بک در صورتی که دامین اختصاصی jasaz.pages.dev باشد
+          if [ -z "$PAGES_URL" ]; then
+            PAGES_URL="https://jasaz.pages.dev"
+          fi
+
+          echo "Detected Pages URL: $PAGES_URL"
+          echo "pages_url=$PAGES_URL" >> $GITHUB_OUTPUT
+
+      - name: Auto-Register Telegram Webhook
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_SECRET_TOKEN: ${{ secrets.TELEGRAM_SECRET_TOKEN }}
+          PAGES_URL: ${{ steps.pages_deploy.outputs.pages_url }}
+        run: |
+          WEBHOOK_URL="${PAGES_URL}/api/telegram-bot"
+          echo "Registering Webhook: $WEBHOOK_URL"
+
+          RESPONSE=$(curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/setWebhook" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"url\": \"${WEBHOOK_URL}\",
+              \"secret_token\": \"${TELEGRAM_SECRET_TOKEN}\",
+              \"drop_pending_updates\": false
+            }")
+
+          echo "Telegram Response: $RESPONSE"
+
+          # اعتبارسنجی پاسخ تلگرام
+          if echo "$RESPONSE" | grep -q '"ok":true'; then
+            echo "✅ Telegram Webhook registered successfully!"
+          else
+            echo "❌ Failed to register Telegram Webhook!"
+            exit 1
+          fi
