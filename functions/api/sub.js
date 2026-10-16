@@ -1,0 +1,208 @@
+// functions/api/sub.js
+
+const DEFAULT_ECH_LIST = [
+  "cloudflare-ech.com+udp://1.1.1.1",
+  "cloudflare-ech.com+udp://8.8.8.8"
+];
+
+const ORDER_ECH = ['path', 'security', 'alpn', 'encryption', 'insecure', 'host', 'fp', 'ech', 'type', 'allowInsecure', 'sni', 'cs', 'fm'];
+
+function b64decode(str) {
+  try {
+    const clean = str.trim().replace(/\s+/g, '').replace(/-/g, '+').replace(/_/g, '/');
+    return decodeURIComponent(escape(atob(clean)));
+  } catch (_) {
+    try {
+      return atob(str.trim());
+    } catch {
+      return '';
+    }
+  }
+}
+
+function b64encode(str) {
+  return btoa(unescape(encodeURIComponent(str)));
+}
+
+function parseQuery(q) {
+  const out = [];
+  if (!q) return out;
+  q.split('&').forEach((p) => {
+    if (!p) return;
+    const i = p.indexOf('=');
+    const k = i < 0 ? p : p.slice(0, i);
+    const v = i < 0 ? '' : p.slice(i + 1);
+    try {
+      out.push({ k: decodeURIComponent(k), v: decodeURIComponent(v) });
+    } catch {
+      out.push({ k, v });
+    }
+  });
+  return out;
+}
+
+function buildQS(params) {
+  const idx = {};
+  ORDER_ECH.forEach((k, i) => { idx[k] = i; });
+  const a = [], b = [];
+  params.forEach((x) => {
+    if (idx[x.k.toLowerCase()] !== undefined) a.push(x);
+    else b.push(x);
+  });
+  a.sort((x, y) => idx[x.k.toLowerCase()] - idx[y.k.toLowerCase()]);
+  return a.concat(b).map((x) => `${encodeURIComponent(x.k)}=${encodeURIComponent(x.v)}`).join('&');
+}
+
+function splitUrl(raw, skip) {
+  let b = raw.slice(skip), frag = '';
+  const qi = b.indexOf('?');
+  const hi = b.indexOf('#', qi >= 0 ? qi : 0);
+  if (hi >= 0) {
+    frag = b.slice(hi + 1);
+    b = b.slice(0, hi);
+  }
+  let q = '';
+  const x = b.indexOf('?');
+  if (x >= 0) {
+    q = b.slice(x + 1);
+    b = b.slice(0, x);
+  }
+  return { body: b, q, frag };
+}
+
+function parseVless(raw) {
+  const s = splitUrl(raw, 8);
+  const a = s.body.lastIndexOf('@');
+  if (a < 0) return null;
+  const id = s.body.slice(0, a).trim();
+  const hostPort = s.body.slice(a + 1).trim();
+  return { proto: 'vless', id, hostPort, p: parseQuery(s.q), f: s.frag };
+}
+
+function parseTrojan(raw) {
+  const s = splitUrl(raw, 9);
+  const a = s.body.lastIndexOf('@');
+  if (a < 0) return null;
+  const pass = s.body.slice(0, a).trim();
+  const hostPort = s.body.slice(a + 1).trim();
+  return { proto: 'trojan', pass, hostPort, p: parseQuery(s.q), f: s.frag };
+}
+
+function extractIpFromEch(ech) {
+  const m = String(ech || '').match(/udp:\/\/([^+\s]+)/i);
+  return m ? m[1].replace(/^\[|\]$/g, '') : ech;
+}
+
+function extractDomainFromEch(ech) {
+  const s = String(ech || '');
+  const i = s.indexOf('+');
+  return i >= 0 ? s.slice(0, i) : s;
+}
+
+function optimizeConfig(raw, echList, suffixTmpl, customHost) {
+  let item = null;
+  const trimmed = raw.trim();
+  if (/^vless:\/\//i.test(trimmed)) item = parseVless(trimmed);
+  else if (/^trojan:\/\//i.test(trimmed)) item = parseTrojan(trimmed);
+  if (!item) return [];
+
+  const out = [];
+  const baseName = item.f ? decodeURIComponent(item.f) : item.proto;
+
+  echList.forEach((echVal) => {
+    const clone = JSON.parse(JSON.stringify(item));
+    clone.p = clone.p.filter((x) => x.k.toLowerCase() !== 'ech');
+    clone.p.push({ k: 'ech', v: echVal });
+
+    if (customHost) {
+      const parts = clone.hostPort.split(':');
+      const port = parts.length > 1 ? `:${parts[parts.length - 1]}` : '';
+      clone.hostPort = `${customHost}${port}`;
+    }
+
+    const ip = extractIpFromEch(echVal);
+    const domain = extractDomainFromEch(echVal);
+
+    let remark = suffixTmpl
+      ? suffixTmpl.replace(/\{name\}/g, baseName).replace(/\{ip\}/g, ip).replace(/\{domain\}/g, domain).replace(/\{type\}/g, item.proto)
+      : `${baseName} ECH ${ip}`;
+
+    const qs = buildQS(clone.p);
+    const auth = clone.proto === 'vless' ? clone.id : encodeURIComponent(clone.pass);
+    out.push(`${clone.proto}://${auth}@${clone.hostPort}${qs ? `?${qs}` : ''}#${encodeURIComponent(remark)}`);
+  });
+
+  return out;
+}
+
+export async function onRequestGet({ request }) {
+  const url = new URL(request.url);
+  const subUrl = url.searchParams.get('url') || url.searchParams.get('sub');
+  const customHost = url.searchParams.get('host') || url.searchParams.get('addr') || '';
+  const suffix = url.searchParams.get('suffix') || ' ECH {ip}';
+  const customEch = url.searchParams.get('ech');
+  const format = (url.searchParams.get('format') || 'b64').toLowerCase();
+
+  if (!subUrl) {
+    return new Response(JSON.stringify({
+      error: "لطفاً لینک ساب‌اسکریپشن را با پارامتر ?url= وارد کنید.",
+      example: `${url.origin}/api/sub?url=https://sub.link.here/configs`
+    }, null, 2), {
+      status: 400,
+      headers: { "Content-Type": "application/json; charset=utf-8" }
+    });
+  }
+
+  const echList = customEch
+    ? customEch.split(',').map((x) => x.trim()).filter(Boolean)
+    : DEFAULT_ECH_LIST;
+
+  try {
+    let rawText = "";
+    if (/^https?:\/\//i.test(subUrl)) {
+      const res = await fetch(subUrl, {
+        headers: { "User-Agent": "v2rayNG/1.8.12 Jasaz-ECH/1.0" }
+      });
+      if (!res.ok) {
+        return new Response(`خطا در دریافت ساب‌لینک: ${res.status}`, { status: 400 });
+      }
+      rawText = await res.text();
+    } else {
+      rawText = subUrl;
+    }
+
+    // بررسی انکودینگ احتمالی Base64 در ساب‌لینک
+    const decoded = b64decode(rawText);
+    const content = (decoded && (decoded.includes("vless://") || decoded.includes("trojan://"))) ? decoded : rawText;
+
+    const lines = content.split(/[\r\n]+/).map((l) => l.trim()).filter(Boolean);
+    const finalConfigs = [];
+
+    lines.forEach((line) => {
+      const generated = optimizeConfig(line, echList, suffix, customHost);
+      finalConfigs.push(...generated);
+    });
+
+    if (finalConfigs.length === 0) {
+      return new Response("هیچ کانفیگ معتبر Vless یا Trojan برای بهینه‌سازی ECH یافت نشد.", { status: 404 });
+    }
+
+    const outputText = finalConfigs.join('\n');
+
+    if (format === 'raw' || format === 'txt') {
+      return new Response(outputText, {
+        headers: { "Content-Type": "text/plain; charset=utf-8" }
+      });
+    }
+
+    return new Response(b64encode(outputText), {
+      headers: {
+        "Content-Type": "text/plain; charset=utf-8",
+        "Subscription-Userinfo": "upload=0; download=0; total=107374182400; expire=0"
+      }
+    });
+
+  } catch (err) {
+    return new Response(`خطای پردازش: ${err.message}`, { status: 500 });
+  }
+}
