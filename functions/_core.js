@@ -156,7 +156,7 @@ function func_dec(idx) {
   return runtimeHeader + "\n" + output;
 }
 
-export async function deployWorker({ accountId, apiToken, workerName, scriptUrl, d1Name, bindingName, enableObfuscation, recreateWorker }) {
+export async function deployWorker({ accountId, apiToken, workerName, scriptUrl, d1Name, bindingName, kvName, kvBindingName, enableObfuscation, recreateWorker }) {
   if (!accountId || !apiToken || !workerName || !scriptUrl) {
     throw new Error("فیلدهای اجباری (Account ID، Token، نام ورکر و آدرس سورس) ناقص هستند.");
   }
@@ -177,10 +177,11 @@ export async function deployWorker({ accountId, apiToken, workerName, scriptUrl,
     workerScript = obfuscateWorkerCode(workerScript);
   }
 
-  // ۳. مدیریت دیتابیس D1
   const bindings = [];
   let d1DatabaseId = null;
+  let kvNamespaceId = null;
 
+  // ۳. مدیریت دیتابیس D1
   if (d1Name && bindingName) {
     const listRes = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/d1/database`, {
       headers: cfHeaders,
@@ -190,9 +191,7 @@ export async function deployWorker({ accountId, apiToken, workerName, scriptUrl,
     if (!listData.success) {
       const isAuthErr = listData.errors?.some(e => e.code === 10000);
       if (isAuthErr) {
-        throw new Error(
-          "خطای دسترسی کلودفلر (کد ۱۰۰۰۰): توکن شما دسترسی 'D1: Edit' را ندارد یا Account ID اشتباه است. لطفاً توکن جدید با دسترسی D1 بسازید."
-        );
+        throw new Error("خطای دسترسی کلودفلر (کد ۱۰۰۰۰): توکن دسترسی 'D1: Edit' را ندارد یا Account ID اشتباه است.");
       }
       throw new Error(`خطای دیتابیس D1: ${JSON.stringify(listData.errors)}`);
     }
@@ -217,7 +216,38 @@ export async function deployWorker({ accountId, apiToken, workerName, scriptUrl,
     bindings.push({ type: "d1", name: bindingName, id: d1DatabaseId });
   }
 
-  // ۴. حذف ورکر قبلی در صورت نیاز
+  // ۴. مدیریت KV Namespace
+  if (kvName && kvBindingName) {
+    const kvListRes = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/storage/kv/namespaces`, {
+      headers: cfHeaders,
+    });
+    const kvListData = await kvListRes.json();
+
+    if (!kvListData.success) {
+      throw new Error(`خطا در دسترسی KV: ${JSON.stringify(kvListData.errors)}`);
+    }
+
+    const existingKv = kvListData.result?.find((ns) => ns.title === kvName);
+
+    if (existingKv) {
+      kvNamespaceId = existingKv.id;
+    } else {
+      const createKvRes = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/storage/kv/namespaces`, {
+        method: "POST",
+        headers: { ...cfHeaders, "Content-Type": "application/json" },
+        body: JSON.stringify({ title: kvName }),
+      });
+      const createKvData = await createKvRes.json();
+      if (!createKvData.success) {
+        throw new Error(`خطا در ایجاد KV Namespace: ${JSON.stringify(createKvData.errors)}`);
+      }
+      kvNamespaceId = createKvData.result.id;
+    }
+
+    bindings.push({ type: "kv_namespace", name: kvBindingName, namespace_id: kvNamespaceId });
+  }
+
+  // ۵. حذف ورکر قبلی در صورت نیاز
   if (recreateWorker) {
     try {
       await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/workers/scripts/${workerName}`, {
@@ -273,6 +303,7 @@ export async function deployWorker({ accountId, apiToken, workerName, scriptUrl,
     workerName,
     workerUrl,
     d1DatabaseId,
+    kvNamespaceId,
     obfuscated: !!enableObfuscation,
     recreated: !!recreateWorker,
   };

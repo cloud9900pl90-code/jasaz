@@ -70,7 +70,7 @@
         <div>
           <div class="flex justify-between items-center mb-1">
             <label class="block text-xs font-medium text-slate-400">API Token کلودفلر *</label>
-            <a href="https://dash.cloudflare.com/profile/api-tokens?permissionGroupKeys=%5B%7B%22key%22%3A%22workers_scripts%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22d1%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22account_settings%22%2C%22type%22%3A%22read%22%7D%2C%7B%22key%22%3A%22account_analytics%22%2C%22type%22%3A%22read%22%7D%5D&accountId=*&zoneId=all&name=Nahan%20Installer" target="_blank" rel="noopener noreferrer" class="text-xs text-orange-400 hover:text-orange-300 flex items-center gap-1 underline font-medium">
+            <a href="https://dash.cloudflare.com/profile/api-tokens?permissionGroupKeys=%5B%7B%22key%22%3A%22workers_scripts%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22d1%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22workers_kv_storage%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22account_settings%22%2C%22type%22%3A%22read%22%7D%2C%7B%22key%22%3A%22account_analytics%22%2C%22type%22%3A%22read%22%7D%5D&accountId=*&zoneId=all&name=Jasaz%20Deployer" target="_blank" rel="noopener noreferrer" class="text-xs text-orange-400 hover:text-orange-300 flex items-center gap-1 underline font-medium">
               <span>ساخت خودکار توکن API</span>
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
             </a>
@@ -161,11 +161,11 @@
 
       <!-- مرحله ۳ -->
       <div id="step-3" class="space-y-4 hidden">
-        <h2 class="text-md font-semibold text-slate-200">گام ۳: پایگاه‌داده ابری D1 (اختیاری)</h2>
+        <h2 class="text-md font-semibold text-slate-200">گام ۳: ذخیره‌سازی داده (D1 و KV - اختیاری)</h2>
         
         <!-- سوئیچ D1 -->
         <label class="flex items-center justify-between p-3.5 bg-slate-950 border border-slate-800 rounded-xl cursor-pointer hover:border-slate-700 transition">
-          <span class="text-sm font-medium text-slate-300 ml-3">اتصال پایگاه‌داده D1 (ساخت جدید یا اتصال دیتابیس قبلی)</span>
+          <span class="text-sm font-medium text-slate-300 ml-3">اتصال پایگاه‌داده ابری D1</span>
           <div class="relative shrink-0 flex items-center">
             <input type="checkbox" id="enableD1" class="sr-only peer" onchange="toggleD1Fields()">
             <div class="w-11 h-6 bg-slate-800 rounded-full peer peer-checked:bg-orange-500 transition-colors after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:-translate-x-5"></div>
@@ -181,8 +181,31 @@
             <input type="text" id="d1Name" dir="ltr" placeholder="اگر دیتابیس وجود داشته باشد به آن متصل می‌شود" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm focus:border-orange-500 focus:outline-none text-left" />
           </div>
           <div>
-            <label class="block text-xs font-medium text-slate-400 mb-1">نام متغیر بایندینگ در کد (Binding Name) *</label>
+            <label class="block text-xs font-medium text-slate-400 mb-1">نام متغیر بایندینگ D1 در کد *</label>
             <input type="text" id="bindingName" dir="ltr" value="DB" placeholder="مثال: DB یا IOT_DB" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm focus:border-orange-500 focus:outline-none text-left" />
+          </div>
+        </div>
+
+        <!-- سوئیچ KV -->
+        <label class="flex items-center justify-between p-3.5 bg-slate-950 border border-slate-800 rounded-xl cursor-pointer hover:border-slate-700 transition">
+          <span class="text-sm font-medium text-slate-300 ml-3">اتصال حافظه کلید-مقدار (KV Namespace)</span>
+          <div class="relative shrink-0 flex items-center">
+            <input type="checkbox" id="enableKV" class="sr-only peer" onchange="toggleKVFields()">
+            <div class="w-11 h-6 bg-slate-800 rounded-full peer peer-checked:bg-orange-500 transition-colors after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:-translate-x-5"></div>
+          </div>
+        </label>
+
+        <div id="kvFields" class="space-y-4 hidden pt-2">
+          <div>
+            <div class="flex justify-between items-center mb-1">
+              <label class="block text-xs font-medium text-slate-400">نام KV Namespace *</label>
+              <button type="button" onclick="generateRandomKVName()" class="text-xs text-orange-400 hover:underline">تولید نام رندوم</button>
+            </div>
+            <input type="text" id="kvName" dir="ltr" placeholder="نام فضای ذخیره‌سازی KV" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm focus:border-orange-500 focus:outline-none text-left" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">نام متغیر بایندینگ KV در کد (KV Binding Name) *</label>
+            <input type="text" id="kvBindingName" dir="ltr" value="KV" placeholder="مثال: KV یا MY_KV" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm focus:border-orange-500 focus:outline-none text-left" />
           </div>
         </div>
       </div>
@@ -434,11 +457,25 @@
       document.getElementById('d1Name').value = `${pick(prefixes)}-${num}`;
     }
 
+    function generateRandomKVName() {
+      const prefixes = ['kv', 'cache', 'store', 'session'];
+      const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+      const num = Math.floor(Math.random() * 899) + 100;
+      document.getElementById('kvName').value = `${pick(prefixes)}-${num}`;
+    }
+
     function toggleD1Fields() {
       const enabled = document.getElementById('enableD1').checked;
       document.getElementById('d1Fields').classList.toggle('hidden', !enabled);
       document.getElementById('d1Name').required = enabled;
       document.getElementById('bindingName').required = enabled;
+    }
+
+    function toggleKVFields() {
+      const enabled = document.getElementById('enableKV').checked;
+      document.getElementById('kvFields').classList.toggle('hidden', !enabled);
+      document.getElementById('kvName').required = enabled;
+      document.getElementById('kvBindingName').required = enabled;
     }
 
     function copyToClipboard(text, btnElement) {
@@ -550,6 +587,8 @@
         recreateWorker: document.getElementById('recreateWorker').checked,
         d1Name: document.getElementById('enableD1').checked ? document.getElementById('d1Name').value.trim() : null,
         bindingName: document.getElementById('enableD1').checked ? document.getElementById('bindingName').value.trim() : null,
+        kvName: document.getElementById('enableKV').checked ? document.getElementById('kvName').value.trim() : null,
+        kvBindingName: document.getElementById('enableKV').checked ? document.getElementById('kvBindingName').value.trim() : null,
       };
 
       try {

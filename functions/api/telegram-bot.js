@@ -1,7 +1,7 @@
 // functions/api/telegram-bot.js
 import { deployWorker } from "../_core.js";
 
-const TOKEN_CREATE_URL = "https://dash.cloudflare.com/profile/api-tokens?permissionGroupKeys=%5B%7B%22key%22%3A%22workers_scripts%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22d1%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22account_settings%22%2C%22type%22%3A%22read%22%7D%2C%7B%22key%22%3A%22account_analytics%22%2C%22type%22%3A%22read%22%7D%5D&accountId=*&zoneId=all&name=Jasaz%20Deployer";
+const TOKEN_CREATE_URL = "https://dash.cloudflare.com/profile/api-tokens?permissionGroupKeys=%5B%7B%22key%22%3A%22workers_scripts%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22d1%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22workers_kv_storage%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22account_settings%22%2C%22type%22%3A%22read%22%7D%2C%7B%22key%22%3A%22account_analytics%22%2C%22type%22%3A%22read%22%7D%5D&accountId=*&zoneId=all&name=Jasaz%20Deployer";
 
 const PRESETS = {
   nahan: {
@@ -46,18 +46,19 @@ async function tgApi(token, method, payload) {
   return await res.json();
 }
 
-function encodeAction(act, pKey, obf, clean, d1) {
-  return `${act}|${pKey}|${obf}|${clean}|${d1}`;
+function encodeAction(act, pKey, obf, clean, d1, kv = 0) {
+  return `${act}|${pKey}|${obf}|${clean}|${d1}|${kv}`;
 }
 
 function parseAction(data) {
-  const [act, pKey, obf, clean, d1] = data.split("|");
+  const [act, pKey, obf, clean, d1, kv] = data.split("|");
   return {
     act,
     pKey: pKey && PRESETS[pKey] ? pKey : "zeus",
     obfuscate: obf === "1",
     recreate: clean === "1",
     d1: d1 === "1",
+    kv: kv === "1",
   };
 }
 
@@ -74,6 +75,8 @@ function parseConfigFromText(text = "") {
     workerName: getVal("WRK") || generateRandomName("cf"),
     d1Name: getVal("D1N") || generateRandomName("db"),
     bindingName: getVal("BND"),
+    kvName: getVal("KVN") || generateRandomName("kv"),
+    kvBindingName: getVal("KVB") || "KV",
     scriptUrl: getVal("URL"),
   };
 }
@@ -187,10 +190,12 @@ URL: ${cfg.scriptUrl || p.url}
 
       if (parsed.act === "rnd_wrk") cfg.workerName = generateRandomName("cf");
       if (parsed.act === "rnd_d1") cfg.d1Name = generateRandomName("db");
+      if (parsed.act === "rnd_kv") cfg.kvName = generateRandomName("kv");
 
       if (parsed.act === "tog_obf") parsed.obfuscate = !parsed.obfuscate;
       if (parsed.act === "tog_cln") parsed.recreate = !parsed.recreate;
       if (parsed.act === "tog_d1") parsed.d1 = !parsed.d1;
+      if (parsed.act === "tog_kv") parsed.kv = !parsed.kv;
 
       // شروع استقرار
       if (parsed.act === "deploy") {
@@ -221,6 +226,8 @@ URL: ${cfg.scriptUrl || p.url}
             scriptUrl: finalUrl,
             bindingName: parsed.d1 ? finalBinding : null,
             d1Name: parsed.d1 ? cfg.d1Name : null,
+            kvName: parsed.kv ? cfg.kvName : null,
+            kvBindingName: parsed.kv ? cfg.kvBindingName : null,
             enableObfuscation: parsed.obfuscate,
             recreateWorker: parsed.recreate,
           });
@@ -407,8 +414,10 @@ async function renderReviewMenu(botToken, chatId, messageId, cfg, state, pKey) {
   const obfFlag = state.obfuscate ? "1" : "0";
   const clnFlag = state.recreate ? "1" : "0";
   const d1Flag = state.d1 ? "1" : "0";
+  const kvFlag = state.kv ? "1" : "0";
 
   const bindingName = cfg.bindingName || p.binding;
+  const kvBindingName = cfg.kvBindingName || "KV";
   const scriptUrl = effectivePKey === "custom" ? (cfg.scriptUrl || "") : p.url;
 
   const text = `📋 <b>تنظیمات استقرار ورکر: ${p.title}</b>
@@ -416,8 +425,8 @@ async function renderReviewMenu(botToken, chatId, messageId, cfg, state, pKey) {
 🔹 <b>نام ورکر:</b> <code>${cfg.workerName}</code>
 🔹 <b>مبهم‌سازی کد:</b> ${state.obfuscate ? "روشن ✅" : "خاموش ❌"}
 🔹 <b>نصب تمیز (Clean):</b> ${state.recreate ? "روشن ✅" : "خاموش ❌"}
-🔹 <b>پایگاه داده D1:</b> ${state.d1 ? `روشن (<code>${cfg.d1Name}</code>)` : "خاموش ❌"}
-🔹 <b>نام بایندینگ:</b> <code>${bindingName}</code>
+🔹 <b>دیتابیس D1:</b> ${state.d1 ? `روشن (<code>${cfg.d1Name}</code>)` : "خاموش ❌"}
+🔹 <b>حافظه KV:</b> ${state.kv ? `روشن (<code>${cfg.kvName}</code>)` : "خاموش ❌"}
 
 <pre>
 PRJ: ${effectivePKey}
@@ -426,32 +435,35 @@ TOK: ${cfg.apiToken}
 WRK: ${cfg.workerName}
 D1N: ${cfg.d1Name}
 BND: ${bindingName}
+KVN: ${cfg.kvName || ""}
+KVB: ${kvBindingName}
 URL: ${scriptUrl}
 </pre>`;
 
   const keyboard = [
     [
-      { text: "✏️ نام ورکر", callback_data: encodeAction("edit_wrk", effectivePKey, obfFlag, clnFlag, d1Flag) },
-      { text: "🎲 نام رندوم", callback_data: encodeAction("rnd_wrk", effectivePKey, obfFlag, clnFlag, d1Flag) },
+      { text: "✏️ نام ورکر", callback_data: encodeAction("edit_wrk", effectivePKey, obfFlag, clnFlag, d1Flag, kvFlag) },
+      { text: "🎲 نام رندوم", callback_data: encodeAction("rnd_wrk", effectivePKey, obfFlag, clnFlag, d1Flag, kvFlag) },
     ],
     ...(state.d1
       ? [
           [
-            { text: "✏️ نام D1", callback_data: encodeAction("edit_d1n", effectivePKey, obfFlag, clnFlag, d1Flag) },
-            { text: "✏️ بایندینگ", callback_data: encodeAction("edit_bnd", effectivePKey, obfFlag, clnFlag, d1Flag) },
-            { text: "🎲 دیتابیس رندوم", callback_data: encodeAction("rnd_d1", effectivePKey, obfFlag, clnFlag, d1Flag) },
+            { text: "✏️ نام D1", callback_data: encodeAction("edit_d1n", effectivePKey, obfFlag, clnFlag, d1Flag, kvFlag) },
+            { text: "✏️ بایندینگ D1", callback_data: encodeAction("edit_bnd", effectivePKey, obfFlag, clnFlag, d1Flag, kvFlag) },
+            { text: "🎲 دیتابیس رندوم", callback_data: encodeAction("rnd_d1", effectivePKey, obfFlag, clnFlag, d1Flag, kvFlag) },
           ],
         ]
       : []),
     [
-      { text: `مبهم‌سازی: ${state.obfuscate ? "روشن 🟢" : "خاموش ⚪"}`, callback_data: encodeAction("tog_obf", effectivePKey, obfFlag, clnFlag, d1Flag) },
-      { text: `نصب Clean: ${state.recreate ? "روشن 🟢" : "خاموش ⚪"}`, callback_data: encodeAction("tog_cln", effectivePKey, obfFlag, clnFlag, d1Flag) },
+      { text: `مبهم‌سازی: ${state.obfuscate ? "روشن 🟢" : "خاموش ⚪"}`, callback_data: encodeAction("tog_obf", effectivePKey, obfFlag, clnFlag, d1Flag, kvFlag) },
+      { text: `نصب Clean: ${state.recreate ? "روشن 🟢" : "خاموش ⚪"}`, callback_data: encodeAction("tog_cln", effectivePKey, obfFlag, clnFlag, d1Flag, kvFlag) },
     ],
     [
-      { text: `دیتابیس D1: ${state.d1 ? "روشن 🟢" : "خاموش ⚪"}`, callback_data: encodeAction("tog_d1", effectivePKey, obfFlag, clnFlag, d1Flag) },
+      { text: `دیتابیس D1: ${state.d1 ? "روشن 🟢" : "خاموش ⚪"}`, callback_data: encodeAction("tog_d1", effectivePKey, obfFlag, clnFlag, d1Flag, kvFlag) },
+      { text: `حافظه KV: ${state.kv ? "روشن 🟢" : "خاموش ⚪"}`, callback_data: encodeAction("tog_kv", effectivePKey, obfFlag, clnFlag, d1Flag, kvFlag) },
     ],
     [
-      { text: `🚀 شروع استقرار ${p.title}`, callback_data: encodeAction("deploy", effectivePKey, obfFlag, clnFlag, d1Flag) },
+      { text: `🚀 شروع استقرار ${p.title}`, callback_data: encodeAction("deploy", effectivePKey, obfFlag, clnFlag, d1Flag, kvFlag) },
       { text: "❌ انصراف", callback_data: "cancel" },
     ],
   ];
