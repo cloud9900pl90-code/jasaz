@@ -572,6 +572,19 @@
         if (result.success) {
           output.className = 'mt-4 p-4 rounded-xl text-xs font-sans leading-relaxed bg-emerald-950/60 border border-emerald-700 text-emerald-200';
           
+          // تعیین مسیر پنل بر اساس سورس کد یا متغیر بایندینگ
+          let panelUrl = result.workerUrl;
+          const currentBinding = document.getElementById('bindingName').value.trim();
+          const currentUrl = document.getElementById('scriptUrl').value.trim();
+
+          if (panelUrl) {
+            if (currentBinding === 'IOT_DB' || currentUrl.includes('nahan')) {
+              panelUrl = panelUrl.replace(/\/+$/, '') + '/sync/dash';
+            } else if (currentBinding === 'DB' || currentUrl.includes('zeus') || currentUrl.includes('Z-E-U-S')) {
+              panelUrl = panelUrl.replace(/\/+$/, '') + '/panel';
+            }
+          }
+
           let html = `
             <div class="flex items-center gap-2 text-sm font-bold text-emerald-300 mb-2">
               <span>عملیات با موفقیت انجام شد! 🎉</span>
@@ -584,20 +597,20 @@
             </div>
           `;
 
-          if (result.workerUrl) {
+          if (panelUrl) {
             html += `
               <div class="mt-4 pt-3 border-t border-emerald-800/60">
-                <div class="text-xs text-slate-300 mb-1.5 font-medium">آدرس کامل و اختصاصی ورکر:</div>
+                <div class="text-xs text-slate-300 mb-1.5 font-medium">آدرس ورود به پنل مدیریت:</div>
                 <div dir="ltr" class="flex items-center justify-between bg-slate-900 border border-slate-700/80 rounded-lg p-2 gap-2">
-                  <a href="${result.workerUrl}" target="_blank" rel="noopener noreferrer" class="text-xs font-mono text-orange-400 hover:underline truncate">
-                    ${result.workerUrl}
+                  <a href="${panelUrl}" target="_blank" rel="noopener noreferrer" class="text-xs font-mono text-orange-400 hover:underline truncate">
+                    ${panelUrl}
                   </a>
                   <div class="flex items-center gap-1 shrink-0">
-                    <button type="button" onclick="copyToClipboard('${result.workerUrl}', this)" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 px-2.5 py-1 rounded transition">
+                    <button type="button" onclick="copyToClipboard('${panelUrl}', this)" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 px-2.5 py-1 rounded transition">
                       کپی آدرس
                     </button>
-                    <a href="${result.workerUrl}" target="_blank" rel="noopener noreferrer" class="text-xs bg-orange-500 hover:bg-orange-600 text-white px-2.5 py-1 rounded transition">
-                      باز کردن
+                    <a href="${panelUrl}" target="_blank" rel="noopener noreferrer" class="text-xs bg-orange-500 hover:bg-orange-600 text-white px-2.5 py-1 rounded transition">
+                      ورود به پنل
                     </a>
                   </div>
                 </div>
