@@ -44,7 +44,6 @@ async function tgApi(token, method, payload) {
   return await res.json();
 }
 
-// انکود وضعیت‌های کلیدها در callback_data (زیر ۶۴ بایت)
 function encodeAction(act, pKey, obf, clean, d1) {
   return `${act}|${pKey}|${obf}|${clean}|${d1}`;
 }
@@ -60,10 +59,10 @@ function parseAction(data) {
   };
 }
 
-// استخراج و ذخیره اطلاعات کانفیگ در متن پیام (Stateless)
+// استخراج تمام مقادیر از متن پنل یا پیام‌های ForceReply
 function parseConfigFromText(text = "") {
   const getVal = (key) => {
-    const match = text.match(new RegExp(`${key}:\\s*([^\\n\\r]+)`));
+    const match = text.match(new RegExp(`${key}:\\s*([^\\n\\r<]+)`));
     return match ? match[1].trim() : "";
   };
 
@@ -88,7 +87,7 @@ export async function onRequestPost({ request, env }) {
   try {
     const update = await request.json();
 
-    // ۱. کلیک روی دکمه‌های شیشه‌ای
+    // ۱. پردازش دکمه‌های شیشه‌ای
     if (update.callback_query) {
       const cq = update.callback_query;
       const chatId = cq.message.chat.id;
@@ -100,25 +99,25 @@ export async function onRequestPost({ request, env }) {
         await tgApi(BOT_TOKEN, "editMessageText", {
           chat_id: chatId,
           message_id: messageId,
-          text: "❌ عملیات لغو شد. برای شروع مجدد /start را بزنید.",
+          text: "❌ عملیات لغو شد. برای شروع مجدد /start را بفرستید.",
         });
         return new Response("OK");
       }
 
-      // انتخاب پروژه
+      // انتخاب پروژه در ابتدا
       if (data.startsWith("pre:")) {
         const pKey = data.split(":")[1];
         const p = PRESETS[pKey];
 
         const promptText = `شما پروژه <b>${p.title}</b> را انتخاب کردید.
 
-لطفاً اطلاعات کلودفلر را در قالب زیر (در یک پیام) بفرستید:
+لطفاً اطلاعات کلودفلر را در قالب زیر بفرستید:
 
 <code>خط اول: Account ID
 خط دوم: API Token</code>
-${pKey === "custom" ? "<code>خط سوم: آدرس سورس ورکر (URL)</code>" : ""}
+${pKey === "custom" ? "<code>خط سوم: آدرس سورس کد ورکر (URL)</code>" : ""}
 
-<i>(پیام بالا را کپی و مقادیر خود را جایگزین کنید)</i>`;
+<i>(پیام بالا را کپی کرده و مقادیر خود را جایگزین کنید)</i>`;
 
         await tgApi(BOT_TOKEN, "sendMessage", {
           chat_id: chatId,
@@ -135,18 +134,35 @@ ${pKey === "custom" ? "<code>خط سوم: آدرس سورس ورکر (URL)</code
       const parsed = parseAction(data);
       const cfg = parseConfigFromText(msgText);
 
-      // درخواست تغییر متن فیلدها از سوی کاربر با ForceReply
+      // درخواست تغییر نام ورکر، نام دیتابیس D1 یا Binding
       if (parsed.act === "edit_wrk" || parsed.act === "edit_d1n" || parsed.act === "edit_bnd") {
         const labels = {
           edit_wrk: "نام ورکر (Worker Name)",
-          edit_d1n: "نام دیتابیس D1",
-          edit_bnd: "نام متغیر Binding (مثال: DB یا IOT_DB)",
+          edit_d1n: "نام پایگاه داده D1",
+          edit_bnd: "نام Binding متغیر",
         };
-        const target = parsed.act.replace("edit_", "").toUpperCase();
+        const fieldKey = parsed.act.replace("edit_", "").toUpperCase();
+
+        // حامل امن: کانفیگ فعلی را در بلاک کد پیام ForceReply ذخیره می‌کنیم
+        const replyPayload = `لطفاً <b>${labels[parsed.act]}</b> جدید را تایپ کرده و ارسال کنید:
+
+[#TARGET_FIELD_${fieldKey}#]
+[#PANEL_MSG_ID_${messageId}#]
+[#PKEY_${parsed.pKey}#]
+[#FLAGS_${parsed.obfuscate ? "1" : "0"}_${parsed.recreate ? "1" : "0"}_${parsed.d1 ? "1" : "0"}#]
+
+<pre>
+ACC: ${cfg.accountId}
+TOK: ${cfg.apiToken}
+WRK: ${cfg.workerName}
+D1N: ${cfg.d1Name}
+BND: ${cfg.bindingName}
+URL: ${cfg.scriptUrl}
+</pre>`;
 
         await tgApi(BOT_TOKEN, "sendMessage", {
           chat_id: chatId,
-          text: `لطفاً <b>${labels[parsed.act]}</b> جدید را بنویسید و ارسال کنید:\n\n[#FIELD_${target}#]\n[#PREV_MSG_${messageId}#]`,
+          text: replyPayload,
           parse_mode: "HTML",
           reply_markup: {
             force_reply: true,
@@ -156,25 +172,21 @@ ${pKey === "custom" ? "<code>خط سوم: آدرس سورس ورکر (URL)</code
         return new Response("OK");
       }
 
-      // دکمه تولید نام رندوم
-      if (parsed.act === "rnd_wrk") {
-        cfg.workerName = generateRandomName("cf");
-      }
-      if (parsed.act === "rnd_d1") {
-        cfg.d1Name = generateRandomName("db");
-      }
+      // تولید نام رندوم برای ورکر یا دیتابیس
+      if (parsed.act === "rnd_wrk") cfg.workerName = generateRandomName("cf");
+      if (parsed.act === "rnd_d1") cfg.d1Name = generateRandomName("db");
 
-      // سوئیچ‌ها
+      // تغییر وضعیت سوئیچ‌ها
       if (parsed.act === "tog_obf") parsed.obfuscate = !parsed.obfuscate;
       if (parsed.act === "tog_cln") parsed.recreate = !parsed.recreate;
       if (parsed.act === "tog_d1") parsed.d1 = !parsed.d1;
 
-      // دکمه شروع استقرار نهایی
+      // شروع فرایند استقرار
       if (parsed.act === "deploy") {
         if (!cfg.accountId || !cfg.apiToken) {
           await tgApi(BOT_TOKEN, "sendMessage", {
             chat_id: chatId,
-            text: "❌ اطلاعات منقضی یا مخدوش شده است. لطفاً با /start از ابتدا آغاز کنید.",
+            text: "❌ اطلاعات منقضی یا مفقود شده است. لطفاً مجدداً /start را بفرستید.",
           });
           return new Response("OK");
         }
@@ -182,7 +194,7 @@ ${pKey === "custom" ? "<code>خط سوم: آدرس سورس ورکر (URL)</code
         await tgApi(BOT_TOKEN, "editMessageText", {
           chat_id: chatId,
           message_id: messageId,
-          text: "⏳ <b>در حال ساخت دیتابیس، بارگذاری کد و فعال‌سازی دامنه ورکر...</b>\nلطفاً شکیبا باشید.",
+          text: "⏳ <b>در حال ساخت دیتابیس، بارگذاری کد و فعال‌سازی دامنه...</b>\nلطفاً شکیبا باشید.",
           parse_mode: "HTML",
         });
 
@@ -204,11 +216,11 @@ ${pKey === "custom" ? "<code>خط سوم: آدرس سورس ورکر (URL)</code
           const resultMsg = `🎉 <b>ورکر با موفقیت مستقر شد!</b>
 
 🔹 <b>نام ورکر:</b> <code>${deployRes.workerName}</code>
-🔹 <b>مبهم‌سازی سورس:</b> ${deployRes.obfuscated ? "فعال ✅" : "خاموش ❌"}
+🔹 <b>مبهم‌سازی کد:</b> ${deployRes.obfuscated ? "فعال ✅" : "خاموش ❌"}
 🔹 <b>نصب تمیز (Clean):</b> ${deployRes.recreated ? "بله ✅" : "خیر"}
-${deployRes.d1DatabaseId ? `🔹 <b>دیتابیس D1:</b> <code>${cfg.d1Name}</code> (${deployRes.d1DatabaseId})\n🔹 <b>متغیر بایندینگ:</b> <code>${cfg.bindingName}</code>` : "🔹 <b>دیتابیس D1:</b> غیرفعال"}
+${deployRes.d1DatabaseId ? `🔹 <b>دیتابیس D1:</b> <code>${cfg.d1Name}</code>\n🔹 <b>متغیر بایندینگ:</b> <code>${cfg.bindingName}</code>` : "🔹 <b>دیتابیس D1:</b> غیرفعال"}
 
-🌐 <b>آدرس ورکر:</b>
+🌐 <b>آدرس نهایی ورکر:</b>
 <a href="${deployRes.workerUrl}">${deployRes.workerUrl}</a>`;
 
           await tgApi(BOT_TOKEN, "editMessageText", {
@@ -237,21 +249,22 @@ ${deployRes.d1DatabaseId ? `🔹 <b>دیتابیس D1:</b> <code>${cfg.d1Name}</
         return new Response("OK");
       }
 
-      // به‌روزرسانی منو
+      // آپدیت پنل اصلی
       await renderReviewMenu(BOT_TOKEN, chatId, messageId, cfg, parsed);
       return new Response("OK");
     }
 
-    // ۲. پردازش پیام‌های ورودی کاربر
+    // ۲. پردازش پیام‌های ورودی متنی
     if (update.message && update.message.text) {
       const chatId = update.message.chat.id;
       const text = update.message.text.trim();
-      const replyTo = update.message.reply_to_message?.text || "";
+      const replyToMsg = update.message.reply_to_message;
+      const replyTo = replyToMsg?.text || "";
 
       if (text === "/start" || text === "/new") {
         await tgApi(BOT_TOKEN, "sendMessage", {
           chat_id: chatId,
-          text: `سلام! برای راه‌اندازی و مدیریت ورکر، پروژه مورد نظر خود را انتخاب کنید:`,
+          text: `سلام! برای نصب و مدیریت ورکر، پروژه مورد نظر خود را انتخاب کنید:`,
           reply_markup: {
             inline_keyboard: [
               [
@@ -265,31 +278,47 @@ ${deployRes.d1DatabaseId ? `🔹 <b>دیتابیس D1:</b> <code>${cfg.d1Name}</
         return new Response("OK");
       }
 
-      // الف: بررسی تغییر فیلد تکی (نام ورکر، نام D1 یا بایندینگ)
-      if (replyTo.includes("[#FIELD_")) {
-        const fieldMatch = replyTo.match(/\[#FIELD_([A-Z0-9]+)#\]/);
-        const prevMsgMatch = replyTo.match(/\[#PREV_MSG_([0-9]+)#\]/);
+      // الف: کاربر در حال پاسخ به تغییر یک فیلد تکی است
+      if (replyTo.includes("[#TARGET_FIELD_")) {
+        const fieldMatch = replyTo.match(/\[#TARGET_FIELD_([A-Z0-9]+)#\]/);
+        const panelMsgMatch = replyTo.match(/\[#PANEL_MSG_ID_([0-9]+)#\]/);
+        const pKeyMatch = replyTo.match(/\[#PKEY_([a-z0-9]+)#\]/);
+        const flagsMatch = replyTo.match(/\[#FLAGS_([01])_([01])_([01])#\]/);
 
-        if (fieldMatch && prevMsgMatch) {
+        if (fieldMatch && panelMsgMatch) {
           const field = fieldMatch[1];
-          const targetMsgId = parseInt(prevMsgMatch[1], 10);
+          const targetPanelMsgId = parseInt(panelMsgMatch[1], 10);
+          const pKey = pKeyMatch ? pKeyMatch[1] : "nahan";
+          
+          const cfg = parseConfigFromText(replyTo);
 
-          // حذف پیام حاوی ورودی کاربر جهت خلوت ماندن صفحه
+          // اعمال مقدار جدید ارسالی کاربر
+          if (field === "WRK") cfg.workerName = text.replace(/[^a-zA-Z0-9_-]/g, "");
+          if (field === "D1N") cfg.d1Name = text.replace(/[^a-zA-Z0-9_-]/g, "");
+          if (field === "BND") cfg.bindingName = text.replace(/[^a-zA-Z0-9_]/g, "");
+
+          const state = {
+            act: "view",
+            pKey: pKey,
+            obfuscate: flagsMatch ? flagsMatch[1] === "1" : true,
+            recreate: flagsMatch ? flagsMatch[2] === "1" : true,
+            d1: flagsMatch ? flagsMatch[3] === "1" : true,
+          };
+
+          // ۱. پنل اصلی پیش‌نمایش در تلگرام را مستقیماً ویرایش و آپدیت می‌کنیم
+          await renderReviewMenu(BOT_TOKEN, chatId, targetPanelMsgId, cfg, state);
+
+          // ۲. پاکسازی پیام‌های سوال و جواب برای خلوت ماندن صفحه چت
           try {
             await tgApi(BOT_TOKEN, "deleteMessage", { chat_id: chatId, message_id: update.message.message_id });
+            await tgApi(BOT_TOKEN, "deleteMessage", { chat_id: chatId, message_id: replyToMsg.message_id });
           } catch (_) {}
 
-          // ارسال پیام راهنما به کاربر که مقدار ثبت شد
-          await tgApi(BOT_TOKEN, "sendMessage", {
-            chat_id: chatId,
-            text: `✅ مقدار با موفقیت به <code>${text}</code> تغییر یافت. لطفاً پنل تنظیمات بالا را بررسی فرمایید.`,
-            parse_mode: "HTML",
-          });
           return new Response("OK");
         }
       }
 
-      // ب: دریافت اولیه اطلاعات حساب (خط اول و دوم)
+      // ب: دریافت اولیه اطلاعات حساب (دو خط: Account ID و API Token)
       let presetKey = "nahan";
       if (replyTo.includes("#PRESET_ZEUS#")) presetKey = "zeus";
       if (replyTo.includes("#PRESET_CUSTOM#")) presetKey = "custom";
@@ -299,7 +328,7 @@ ${deployRes.d1DatabaseId ? `🔹 <b>دیتابیس D1:</b> <code>${cfg.d1Name}</
       if (lines.length < 2) {
         await tgApi(BOT_TOKEN, "sendMessage", {
           chat_id: chatId,
-          text: "⚠️ لطفاً اطلاعات را حداقل در دو خط جداگانه بفرستید:\nخط ۱: Account ID\nخط ۲: API Token\n\nبرای شروع دوباره /start را بزنید.",
+          text: "⚠️ لطفاً اطلاعات را در دو خط جداگانه ارسال فرمایید:\nخط ۱: Account ID\nخط ۲: API Token\n\nبرای شروع دوباره /start را بزنید.",
         });
         return new Response("OK");
       }
@@ -322,7 +351,7 @@ ${deployRes.d1DatabaseId ? `🔹 <b>دیتابیس D1:</b> <code>${cfg.d1Name}</
         d1: p.d1 === 1,
       };
 
-      // حذف پیام کاربر حاوی توکن محرمانه
+      // حذف پیام کاربر که حاوی API Token بود جهت حفظ امنیت
       try {
         await tgApi(BOT_TOKEN, "deleteMessage", { chat_id: chatId, message_id: update.message.message_id });
       } catch (_) {}
@@ -337,7 +366,7 @@ ${deployRes.d1DatabaseId ? `🔹 <b>دیتابیس D1:</b> <code>${cfg.d1Name}</
   }
 }
 
-// ساخت و ارسال اینترفیس پیش‌نمایش همراه با تمام دکمه‌های تغییر نام
+// تولید و ویرایش زنده پنل تنظیمات
 async function renderReviewMenu(botToken, chatId, messageId, cfg, state) {
   const p = PRESETS[state.pKey];
   const obfFlag = state.obfuscate ? "1" : "0";
@@ -347,10 +376,10 @@ async function renderReviewMenu(botToken, chatId, messageId, cfg, state) {
   const text = `📋 <b>تنظیمات استقرار ورکر (${p.title})</b>
 
 🔹 <b>نام ورکر:</b> <code>${cfg.workerName}</code>
-🔹 <b>مبهم‌سازی کد:</b> ${state.obfuscate ? "فعال ✅" : "خاموش ❌"}
-🔹 <b>نصب تمیز (Clean):</b> ${state.recreate ? "فعال ✅" : "خاموش ❌"}
-🔹 <b>پایگاه داده D1:</b> ${state.d1 ? `فعال (<code>${cfg.d1Name}</code>)` : "غیرفعال ❌"}
-🔹 <b>متغیر بایندینگ:</b> <code>${cfg.bindingName}</code>
+🔹 <b>مبهم‌سازی کد:</b> ${state.obfuscate ? "روشن ✅" : "خاموش ❌"}
+🔹 <b>نصب تمیز (Clean):</b> ${state.recreate ? "روشن ✅" : "خاموش ❌"}
+🔹 <b>پایگاه داده D1:</b> ${state.d1 ? `روشن (<code>${cfg.d1Name}</code>)` : "خاموش ❌"}
+🔹 <b>نام بایندینگ:</b> <code>${cfg.bindingName}</code>
 
 <i>برای تغییر نام‌ها یا سوئیچ‌ها، روی دکمه‌های زیر بزنید:</i>
 
@@ -364,12 +393,10 @@ URL: ${cfg.scriptUrl}
 </pre>`;
 
   const keyboard = [
-    // ردیف تغییر نام ورکر
     [
       { text: "✏️ تغییر نام ورکر", callback_data: encodeAction("edit_wrk", state.pKey, obfFlag, clnFlag, d1Flag) },
       { text: "🎲 نام رندوم ورکر", callback_data: encodeAction("rnd_wrk", state.pKey, obfFlag, clnFlag, d1Flag) },
     ],
-    // ردیف تغییرات D1 (اگر فعال باشد)
     ...(state.d1
       ? [
           [
@@ -379,7 +406,6 @@ URL: ${cfg.scriptUrl}
           ],
         ]
       : []),
-    // ردیف سوئیچ‌ها
     [
       { text: `مبهم‌سازی: ${state.obfuscate ? "روشن 🟢" : "خاموش ⚪"}`, callback_data: encodeAction("tog_obf", state.pKey, obfFlag, clnFlag, d1Flag) },
       { text: `نصب Clean: ${state.recreate ? "روشن 🟢" : "خاموش ⚪"}`, callback_data: encodeAction("tog_cln", state.pKey, obfFlag, clnFlag, d1Flag) },
@@ -387,7 +413,6 @@ URL: ${cfg.scriptUrl}
     [
       { text: `دیتابیس D1: ${state.d1 ? "روشن 🟢" : "خاموش ⚪"}`, callback_data: encodeAction("tog_d1", state.pKey, obfFlag, clnFlag, d1Flag) },
     ],
-    // ردیف اقدام نهایی
     [
       { text: "🚀 شروع استقرار ورکر", callback_data: encodeAction("deploy", state.pKey, obfFlag, clnFlag, d1Flag) },
       { text: "❌ انصراف", callback_data: "cancel" },
