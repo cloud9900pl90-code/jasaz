@@ -370,11 +370,22 @@ ${extraTips}
       }
 
       // ب: دریافت اطلاعات اولیه اکانت
-      // تشخیص دقیق پریست انتخاب‌شده
-      let presetKey = "zeus"; // پیش‌فرض زئوس در صورت عدم تشخیص
-      if (replyTo.includes("[#PRJ_NAHAN#]")) presetKey = "nahan";
-      else if (replyTo.includes("[#PRJ_ZEUS#]")) presetKey = "zeus";
-      else if (replyTo.includes("[#PRJ_CUSTOM#]")) presetKey = "custom";
+      // تشخیص بدون حساسیت به حروف (Case-Insensitive) با استخراج مستقیم شناسه پروژه
+      let presetKey = "nahan"; // پیش‌فرض امن
+
+      const prjMatch = replyTo.match(/\[#PRJ_([a-zA-Z0-9]+)#\]/i);
+      if (prjMatch && prjMatch[1]) {
+        const detected = prjMatch[1].toLowerCase();
+        if (PRESETS[detected]) {
+          presetKey = detected;
+        }
+      } else if (/نهان|nahan/i.test(replyTo)) {
+        presetKey = "nahan";
+      } else if (/زئوس|zeus/i.test(replyTo)) {
+        presetKey = "zeus";
+      } else if (/سفارشی|custom/i.test(replyTo)) {
+        presetKey = "custom";
+      }
 
       const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
 
