@@ -256,32 +256,55 @@
 
     </form>
 
-    <!-- ابزار آنلاین تولید ساب‌لینک ECH -->
+    <!-- ابزار آنلاین بهینه‌ساز پیشرفته ساب‌لینک -->
     <div class="p-5 mx-6 mb-4 bg-slate-950/90 border border-emerald-500/30 rounded-xl space-y-3">
       <div class="flex items-center justify-between">
         <h3 class="text-sm font-bold text-emerald-400 flex items-center gap-2">
           <span>⚡</span>
-          <span>تبدیل خودکار ساب‌لینک به ECH (سرویس اختصاصی)</span>
+          <span>بهینه‌ساز پیشرفته ساب‌لینک (Fragment + ECH + Cipher Suites)</span>
         </h3>
-        <span class="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full">Endpoint: /api/sub</span>
+        <span class="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full">/api/sub</span>
       </div>
       <p class="text-xs text-slate-400 leading-relaxed">
-        لینک ساب‌اسکریپشن خود را وارد کنید تا لینک دائمی بهینه‌ساز ECH اختصاصی ساخته شود:
+        لینک ساب‌اسکریپشن خود را وارد کنید تا لینک اختصاصی جهت دور زدن فیلترینگ با Fragment و ECH ساخته شود:
       </p>
-      <div class="space-y-2">
-        <input type="url" id="echSubInput" dir="ltr" placeholder="https://example.com/sub/token..." class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2.5 text-xs font-mono text-slate-200 focus:border-emerald-500 focus:outline-none" />
-        <div class="grid grid-cols-2 gap-2">
-          <input type="text" id="echHostInput" dir="ltr" placeholder="آدرس سرور دلخواه (اختیاری)" class="bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs font-mono text-slate-200 focus:border-emerald-500 focus:outline-none" />
-          <button type="button" onclick="generateEchSubLink()" class="bg-emerald-500 hover:bg-emerald-600 text-slate-950 text-xs font-bold py-2 rounded-lg transition shadow-md shadow-emerald-500/10">
-            ساخت ساب‌لینک ECH 🚀
-          </button>
+      
+      <div class="space-y-2.5">
+        <input type="url" id="optSubInput" dir="ltr" placeholder="https://example.com/sub/token..." class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2.5 text-xs font-mono text-slate-200 focus:border-emerald-500 focus:outline-none" />
+        
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <input type="text" id="optHostInput" dir="ltr" placeholder="کلین IP یا آدرس جدید (اختیاری)" class="bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs font-mono text-slate-200 focus:border-emerald-500 focus:outline-none" />
+          <select id="optFpSelect" class="bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs text-slate-300 focus:border-emerald-500 focus:outline-none">
+            <option value="">Fingerprint: پیش‌فرض کانفیگ</option>
+            <option value="chrome">chrome</option>
+            <option value="firefox">firefox</option>
+            <option value="safari">safari</option>
+            <option value="edge">edge</option>
+            <option value="random">random</option>
+          </select>
         </div>
+
+        <div class="flex items-center gap-4 text-xs text-slate-300 pt-1">
+          <label class="flex items-center gap-1.5 cursor-pointer select-none">
+            <input type="checkbox" id="optFragmentCheck" checked class="w-4 h-4 rounded bg-slate-900 border-slate-800 text-emerald-500 focus:ring-0 cursor-pointer">
+            <span>تزریق Fragment و Cipher Suites</span>
+          </label>
+          <label class="flex items-center gap-1.5 cursor-pointer select-none">
+            <input type="checkbox" id="optEchCheck" class="w-4 h-4 rounded bg-slate-900 border-slate-800 text-emerald-500 focus:ring-0 cursor-pointer">
+            <span>فعال‌سازی چندگانه ECH</span>
+          </label>
+        </div>
+
+        <button type="button" onclick="generateAdvancedSubLink()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 text-xs font-bold py-2.5 rounded-lg transition shadow-md shadow-emerald-500/10">
+          تولید ساب‌لینک بهینه‌شده داینامیک 🚀
+        </button>
       </div>
-      <div id="echSubResult" class="hidden pt-2 border-t border-slate-800/80 space-y-1.5">
-        <span class="text-[11px] text-slate-400">لینک ساب‌اسکریپشن بهینه‌شده شما (آماده افزودن به اپلیکیشن):</span>
+
+      <div id="optSubResult" class="hidden pt-2 border-t border-slate-800/80 space-y-1.5">
+        <span class="text-[11px] text-slate-400">لینک اختصاصی بهینه‌شده شما (آماده افزودن به اپلیکیشن):</span>
         <div dir="ltr" class="flex items-center justify-between bg-slate-900 border border-emerald-600/40 rounded-lg p-2 gap-2">
-          <span id="echGeneratedUrl" class="text-xs font-mono text-emerald-300 truncate select-all"></span>
-          <button type="button" onclick="copyToClipboard(document.getElementById('echGeneratedUrl').innerText, this)" class="shrink-0 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-2.5 py-1 rounded transition">
+          <span id="optGeneratedUrl" class="text-xs font-mono text-emerald-300 truncate select-all"></span>
+          <button type="button" onclick="copyToClipboard(document.getElementById('optGeneratedUrl').innerText, this)" class="shrink-0 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-2.5 py-1 rounded transition">
             کپی
           </button>
         </div>
@@ -546,19 +569,26 @@
       });
     }
 
-    function generateEchSubLink() {
-      const subUrl = document.getElementById('echSubInput').value.trim();
-      const customHost = document.getElementById('echHostInput').value.trim();
+    function generateAdvancedSubLink() {
+      const subUrl = document.getElementById('optSubInput').value.trim();
+      const customHost = document.getElementById('optHostInput').value.trim();
+      const fp = document.getElementById('optFpSelect').value;
+      const fragment = document.getElementById('optFragmentCheck').checked;
+      const ech = document.getElementById('optEchCheck').checked;
+
       if (!subUrl) {
-        alert('لطفاً آدرس ساب‌لینک خود را وارد کنید.');
+        alert('لطفاً آدرس ساب‌لینک را وارد کنید.');
         return;
       }
+
       let finalUrl = `${window.location.origin}/api/sub?url=${encodeURIComponent(subUrl)}`;
-      if (customHost) {
-        finalUrl += `&host=${encodeURIComponent(customHost)}`;
-      }
-      document.getElementById('echGeneratedUrl').innerText = finalUrl;
-      document.getElementById('echSubResult').classList.remove('hidden');
+      if (customHost) finalUrl += `&host=${encodeURIComponent(customHost)}`;
+      if (fp) finalUrl += `&fp=${encodeURIComponent(fp)}`;
+      if (!fragment) finalUrl += `&fragment=0`;
+      if (ech) finalUrl += `&ech=1`;
+
+      document.getElementById('optGeneratedUrl').innerText = finalUrl;
+      document.getElementById('optSubResult').classList.remove('hidden');
     }
 
     // --- مدیریت مراحل استپر ---
