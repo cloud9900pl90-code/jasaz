@@ -585,6 +585,8 @@
             }
           }
 
+          let isNahan = currentBinding === 'IOT_DB' || currentUrl.includes('nahan');
+
           let html = `
             <div class="flex items-center gap-2 text-sm font-bold text-emerald-300 mb-2">
               <span>عملیات با موفقیت انجام شد! 🎉</span>
@@ -594,6 +596,7 @@
               <div>وضعیت نصب: <span class="text-white">${result.recreated ? 'حذف و بازسازی مجدد از ابتدا (Clean)' : 'به‌روزرسانی مستقیم'}</span></div>
               <div>مبهم‌سازی سورس: <span class="text-white">${result.obfuscated ? 'فعال شد' : 'غیرفعال'}</span></div>
               ${result.d1DatabaseId ? `<div>دیتابیس D1 متصل شد (UUID): <span class="font-mono text-emerald-400">${result.d1DatabaseId}</span></div>` : '<div>دیتابیس D1: بدون دیتابیس</div>'}
+              ${isNahan ? `<div class="mt-2 p-2 bg-emerald-900/60 border border-emerald-600/50 rounded-lg text-emerald-100 font-sans">🔑 <b>رمز عبور پیش‌فرض پنل نهان:</b> <code class="bg-black/40 px-1.5 py-0.5 rounded text-orange-300 select-all font-mono">admin</code></div>` : ''}
             </div>
           `;
 
