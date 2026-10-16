@@ -188,7 +188,13 @@ export async function deployWorker({ accountId, apiToken, workerName, scriptUrl,
     const listData = await listRes.json();
 
     if (!listData.success) {
-      throw new Error(`خطای احراز هویت دیتابیس D1: ${JSON.stringify(listData.errors)}`);
+      const isAuthErr = listData.errors?.some(e => e.code === 10000);
+      if (isAuthErr) {
+        throw new Error(
+          "خطای دسترسی کلودفلر (کد ۱۰۰۰۰): توکن شما دسترسی 'D1: Edit' را ندارد یا Account ID اشتباه است. لطفاً توکن جدید با دسترسی D1 بسازید."
+        );
+      }
+      throw new Error(`خطای دیتابیس D1: ${JSON.stringify(listData.errors)}`);
     }
 
     const existingDb = listData.result?.find((db) => db.name === d1Name);
