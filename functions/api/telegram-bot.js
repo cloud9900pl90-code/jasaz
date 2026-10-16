@@ -265,6 +265,10 @@ ${extraTips}
             reply_markup: {
               inline_keyboard: [
                 [{ text: "🚀 ورود مستقیم به پنل", url: panelUrl }],
+                [
+                  { text: "📡 کلین آی‌پی (@itsZetaBot)", url: "https://t.me/itsZetaBot" },
+                  { text: "🌐 آی‌پی رله (@nahanproxyipbot)", url: "https://t.me/nahanproxyipbot" },
+                ],
                 [{ text: "🔄 نصب ورکر دیگر", callback_data: "cancel" }],
               ],
             },
@@ -299,9 +303,18 @@ ${extraTips}
       const replyTo = replyToMsg?.text || "";
 
       if (text === "/start" || text === "/new") {
+        const welcomeMsg = `سلام! به ربات نصب و مدیریت ورکر خوش آمدید 🚀
+
+پروژه مورد نظر خود را جهت استقرار انتخاب کنید:
+
+<b>🧰 سایر ابزارهای کاربردی پیشنهادی:</b>
+• @itsZetaBot: اسکنر زنده کلین آی‌پی کلودفلر، استخراج DNS و تبدیل تصادفی حروف SNI
+• @nahanproxyipbot: دسترسی روزانه به سریع‌ترین Proxy IPهای رله جهانی`;
+
         await tgApi(BOT_TOKEN, "sendMessage", {
           chat_id: chatId,
-          text: `سلام! برای نصب و مدیریت ورکر، ابتدا پروژه مورد نظرتان را انتخاب کنید:`,
+          parse_mode: "HTML",
+          text: welcomeMsg,
           reply_markup: {
             inline_keyboard: [
               [
@@ -309,6 +322,10 @@ ${extraTips}
                 { text: "🛡️ نهان (Nahan)", callback_data: "pre:nahan" },
               ],
               [{ text: "🛠️ سورس سفارشی (Custom)", callback_data: "pre:custom" }],
+              [
+                { text: "📡 ربات Zeta (کلین IP)", url: "https://t.me/itsZetaBot" },
+                { text: "🌐 ربات Proxy IP رله", url: "https://t.me/nahanproxyipbot" },
+              ],
             ],
           },
         });
