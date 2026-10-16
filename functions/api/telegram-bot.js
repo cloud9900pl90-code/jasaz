@@ -226,10 +226,14 @@ URL: ${cfg.scriptUrl || p.url}
           });
 
           // اضافه کردن مسیر اختصاصی پنل هر پروژه
+          // ساخت لینک و پسورد پیش‌فرض اختصاصی هر پروژه
           let panelUrl = deployRes.workerUrl;
+          let extraTips = "";
+
           if (panelUrl) {
             if (activePresetKey === "nahan") {
               panelUrl = panelUrl.replace(/\/+$/, "") + "/sync/dash";
+              extraTips = "\n🔑 <b>رمز عبور پیش‌فرض ورود به پنل نهان:</b> <code>admin</code>";
             } else if (activePresetKey === "zeus") {
               panelUrl = panelUrl.replace(/\/+$/, "") + "/panel";
             }
@@ -241,6 +245,7 @@ URL: ${cfg.scriptUrl || p.url}
 🔹 <b>مبهم‌سازی:</b> ${deployRes.obfuscated ? "فعال ✅" : "خاموش ❌"}
 🔹 <b>نصب تمیز:</b> ${deployRes.recreated ? "بله ✅" : "خیر"}
 ${deployRes.d1DatabaseId ? `🔹 <b>دیتابیس D1:</b> <code>${cfg.d1Name}</code>\n🔹 <b>بایندینگ:</b> <code>${finalBinding}</code>` : "🔹 <b>دیتابیس D1:</b> غیرفعال"}
+${extraTips}
 
 🌐 <b>آدرس داشبورد پنل:</b>
 <a href="${panelUrl}">${panelUrl}</a>`;
