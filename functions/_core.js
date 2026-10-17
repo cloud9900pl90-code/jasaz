@@ -426,7 +426,7 @@ export async function deployPages({ accountId, apiToken, projectName, scriptUrl,
     }),
   });
 
-  // ۷. محاسبه هش دقیق SHA-256 و بارگذاری مستقیم _worker.js
+  // ۷. استاندارد رسمی کلودفلر Pages برای Advanced Mode (_worker.js)
   async function sha256(content) {
     const encoder = new TextEncoder();
     const data = encoder.encode(content);
@@ -434,14 +434,21 @@ export async function deployPages({ accountId, apiToken, projectName, scriptUrl,
     return Array.from(new Uint8Array(hashBuffer)).map((b) => b.toString(16).padStart(2, "0")).join("");
   }
 
-  const workerHash = await sha256(finalScript);
+  // فایل استاتیک روت جهت راه‌اندازی روتر Pages
+  const dummyHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>Loading...</body></html>`;
+  const dummyHash = await sha256(dummyHtml);
+
+  // در API کلودفلر، مانیفست فایل‌های استاتیک را نگاشت می‌کند
   const manifest = {
-    "/_worker.js": workerHash,
+    "/index.html": dummyHash,
   };
 
   const formData = new FormData();
   formData.append("manifest", JSON.stringify(manifest));
-  formData.append(workerHash, new Blob([finalScript], { type: "application/javascript+module" }), "_worker.js");
+  formData.append(dummyHash, new Blob([dummyHtml], { type: "text/html" }), "index.html");
+  
+  // فیلد رسمی کلودفلر برای دریافت کد ورکر در Pages Functions
+  formData.append("_worker.bundle", new Blob([finalScript], { type: "application/javascript" }), "_worker.js");
 
   const deployRes = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/pages/projects/${projectName}/deployments`, {
     method: "POST",
