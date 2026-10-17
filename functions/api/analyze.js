@@ -69,7 +69,7 @@ Return ONLY valid JSON (without Markdown codeblocks, without backticks, without 
 Source Code:
 ${truncatedCode}`;
 
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey.trim()}`;
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${geminiApiKey.trim()}`;
     
     const geminiRes = await fetch(geminiUrl, {
       method: "POST",
