@@ -83,7 +83,7 @@
         <div>
           <div class="flex justify-between items-center mb-1">
             <label class="block text-xs font-medium text-slate-400">API Token کلودفلر *</label>
-            <a href="https://dash.cloudflare.com/profile/api-tokens?permissionGroupKeys=%5B%7B%22key%22%3A%22workers_scripts%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22pages%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22d1%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22workers_kv_storage%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22account_settings%22%2C%22type%22%3A%22read%22%7D%2C%7B%22key%22%3A%22account_analytics%22%2C%22type%22%3A%22read%22%7D%2C%7B%22key%22%3A%22page%22%2C%22type%22%3A%22edit%22%7D%5D&accountId=*&zoneId=all&name=Jasaz%20Deployer" target="_blank" rel="noopener noreferrer" class="text-xs text-orange-400 hover:text-orange-300 flex items-center gap-1 underline font-medium">
+            <a href="https://dash.cloudflare.com/profile/api-tokens?permissionGroupKeys=%5B%7B%22key%22%3A%22workers_scripts%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22d1%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22workers_kv_storage%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22account_settings%22%2C%22type%22%3A%22read%22%7D%2C%7B%22key%22%3A%22account_analytics%22%2C%22type%22%3A%22read%22%7D%5D&accountId=*&zoneId=all&name=Jasaz%20Deployer" target="_blank" rel="noopener noreferrer" class="text-xs text-orange-400 hover:text-orange-300 flex items-center gap-1 underline font-medium">
               <span>ساخت خودکار توکن API</span>
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
             </a>
@@ -102,28 +102,7 @@
 
       <!-- مرحله ۲ -->
       <div id="step-2" class="space-y-4 hidden">
-        <h2 class="text-md font-semibold text-slate-200">گام ۲: بستر استقرار، تنظیمات سورس و نام پروژه</h2>
-
-        <!-- انتخاب پلتفرم استقرار -->
-        <div>
-          <label class="block text-xs font-medium text-slate-400 mb-1.5">بستر استقرار در کلودفلر (Platform Target):</label>
-          <div class="grid grid-cols-2 gap-2">
-            <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-800 bg-slate-950 cursor-pointer hover:border-orange-500/60 transition">
-              <input type="radio" name="deployTarget" value="workers" checked class="text-orange-500 focus:ring-0">
-              <div class="flex flex-col">
-                <span class="text-xs font-bold text-slate-200">Cloudflare Workers</span>
-                <span class="text-[10px] text-slate-500">سرویس سریع لبه (*.workers.dev)</span>
-              </div>
-            </label>
-            <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-800 bg-slate-950 cursor-pointer hover:border-orange-500/60 transition">
-              <input type="radio" name="deployTarget" value="pages" class="text-orange-500 focus:ring-0">
-              <div class="flex flex-col">
-                <span class="text-xs font-bold text-slate-200">Cloudflare Pages</span>
-                <span class="text-[10px] text-slate-500">میزبانی پروژه (*.pages.dev)</span>
-              </div>
-            </label>
-          </div>
-        </div>
+        <h2 class="text-md font-semibold text-slate-200">گام ۲: تنظیمات سورس و نام ورکر</h2>
 
         <!-- انتخاب الگوی آماده (Preset Selector) -->
         <div>
@@ -870,9 +849,7 @@
       prevBtn.disabled = true;
       submitBtn.classList.add('opacity-50');
 
-      const deployTargetEl = document.querySelector('input[name="deployTarget"]:checked');
       const payload = {
-        deployTarget: deployTargetEl ? deployTargetEl.value : 'workers',
         accountId: document.getElementById('accountId').value.trim(),
         apiToken: document.getElementById('apiToken').value.trim(),
         workerName: document.getElementById('workerName').value.trim(),

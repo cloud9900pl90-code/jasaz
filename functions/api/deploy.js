@@ -1,5 +1,5 @@
 // functions/api/deploy.js
-import { deployWorker, deployPages } from "../_core.js";
+import { deployWorker } from "../_core.js";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -14,11 +14,7 @@ export async function onRequestOptions() {
 export async function onRequestPost({ request }) {
   try {
     const payload = await request.json();
-    const isPages = payload.deployTarget === 'pages';
-    const result = isPages
-      ? await deployPages({ ...payload, projectName: payload.workerName, recreateProject: payload.recreateWorker })
-      : await deployWorker(payload);
-
+    const result = await deployWorker(payload);
     return new Response(JSON.stringify(result), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

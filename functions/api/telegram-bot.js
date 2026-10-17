@@ -1,7 +1,7 @@
 // functions/api/telegram-bot.js
 import { deployWorker } from "../_core.js";
 
-const TOKEN_CREATE_URL = "https://dash.cloudflare.com/profile/api-tokens?permissionGroupKeys=%5B%7B%22key%22%3A%22workers_scripts%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22pages%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22d1%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22workers_kv_storage%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22account_settings%22%2C%22type%22%3A%22read%22%7D%2C%7B%22key%22%3A%22account_analytics%22%2C%22type%22%3A%22read%22%7D%2C%7B%22key%22%3A%22page%22%2C%22type%22%3A%22edit%22%7D%5D&accountId=*&zoneId=all&name=Jasaz%20Deployer";
+const TOKEN_CREATE_URL = "https://dash.cloudflare.com/profile/api-tokens?permissionGroupKeys=%5B%7B%22key%22%3A%22workers_scripts%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22d1%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22workers_kv_storage%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22account_settings%22%2C%22type%22%3A%22read%22%7D%2C%7B%22key%22%3A%22account_analytics%22%2C%22type%22%3A%22read%22%7D%5D&accountId=*&zoneId=all&name=Jasaz%20Deployer";
 
 const PRESETS = {
   nahan: {
@@ -219,14 +219,10 @@ URL: ${cfg.scriptUrl || p.url}
         const finalBinding = cfg.bindingName || p.binding;
 
         try {
-          const isPagesTarget = parsed.target === "pages";
-          const deployFn = isPagesTarget ? deployPages : deployWorker;
-
-          const deployRes = await deployFn({
+          const deployRes = await deployWorker({
             accountId: cfg.accountId,
             apiToken: cfg.apiToken,
             workerName: cfg.workerName,
-            projectName: cfg.workerName,
             scriptUrl: finalUrl,
             bindingName: parsed.d1 ? finalBinding : null,
             d1Name: parsed.d1 ? cfg.d1Name : null,
@@ -234,7 +230,6 @@ URL: ${cfg.scriptUrl || p.url}
             kvBindingName: parsed.kv ? cfg.kvBindingName : null,
             enableObfuscation: parsed.obfuscate,
             recreateWorker: parsed.recreate,
-            recreateProject: parsed.recreate,
           });
 
           // اضافه کردن مسیر اختصاصی پنل هر پروژه
