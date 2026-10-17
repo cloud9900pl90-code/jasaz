@@ -418,15 +418,38 @@ export async function deployPages({ accountId, apiToken, projectName, scriptUrl,
     }),
   });
 
-  // ۷. دیپلوی مستقیم فایل _worker.js روی Cloudflare Pages
+  // ۷. محاسبه هش SHA-256 و آماده‌سازی فایل‌ها برای ساختار کامل Cloudflare Pages
+  async function sha256(content) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(content);
+    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+  }
+
+  // فایل صفحه نگهدارنده استاتیک جهت فعال‌سازی کامل روتر Pages
+  const indexHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${projectName}</title></head><body>Redirecting to worker...</body></html>`;
+  const routesJson = JSON.stringify({
+    version: 1,
+    include: ["/*"],
+    exclude: [],
+  });
+
+  const workerHash = await sha256(workerScript);
+  const indexHash = await sha256(indexHtml);
+  const routesHash = await sha256(routesJson);
+
+  const manifest = {
+    "/_worker.js": workerHash,
+    "/index.html": indexHash,
+    "/_routes.json": routesHash,
+  };
+
   const formData = new FormData();
-  formData.append(
-    "manifest",
-    JSON.stringify({
-      "/_worker.js": "worker",
-    })
-  );
-  formData.append("worker", new Blob([workerScript], { type: "application/javascript" }), "_worker.js");
+  formData.append("manifest", JSON.stringify(manifest));
+  formData.append(workerHash, new Blob([workerScript], { type: "application/javascript" }), "_worker.js");
+  formData.append(indexHash, new Blob([indexHtml], { type: "text/html" }), "index.html");
+  formData.append(routesHash, new Blob([routesJson], { type: "application/json" }), "_routes.json");
 
   const deployRes = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/pages/projects/${projectName}/deployments`, {
     method: "POST",
