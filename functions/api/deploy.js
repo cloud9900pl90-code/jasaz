@@ -1,5 +1,5 @@
 // functions/api/deploy.js
-import { deployWorker } from "../_core.js";
+import { deployWorker, deployPages } from "../_core.js";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -10,8 +10,6 @@ const corsHeaders = {
 export async function onRequestOptions() {
   return new Response(null, { status: 204, headers: corsHeaders });
 }
-
-import { deployWorker, deployPages } from "../_core.js";
 
 export async function onRequestPost({ request }) {
   try {
