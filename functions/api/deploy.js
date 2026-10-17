@@ -11,10 +11,16 @@ export async function onRequestOptions() {
   return new Response(null, { status: 204, headers: corsHeaders });
 }
 
+import { deployWorker, deployPages } from "../_core.js";
+
 export async function onRequestPost({ request }) {
   try {
     const payload = await request.json();
-    const result = await deployWorker(payload);
+    const isPages = payload.deployTarget === 'pages';
+    const result = isPages
+      ? await deployPages({ ...payload, projectName: payload.workerName, recreateProject: payload.recreateWorker })
+      : await deployWorker(payload);
+
     return new Response(JSON.stringify(result), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

@@ -219,10 +219,14 @@ URL: ${cfg.scriptUrl || p.url}
         const finalBinding = cfg.bindingName || p.binding;
 
         try {
-          const deployRes = await deployWorker({
+          const isPagesTarget = parsed.target === "pages";
+          const deployFn = isPagesTarget ? deployPages : deployWorker;
+
+          const deployRes = await deployFn({
             accountId: cfg.accountId,
             apiToken: cfg.apiToken,
             workerName: cfg.workerName,
+            projectName: cfg.workerName,
             scriptUrl: finalUrl,
             bindingName: parsed.d1 ? finalBinding : null,
             d1Name: parsed.d1 ? cfg.d1Name : null,
@@ -230,6 +234,7 @@ URL: ${cfg.scriptUrl || p.url}
             kvBindingName: parsed.kv ? cfg.kvBindingName : null,
             enableObfuscation: parsed.obfuscate,
             recreateWorker: parsed.recreate,
+            recreateProject: parsed.recreate,
           });
 
           // اضافه کردن مسیر اختصاصی پنل هر پروژه

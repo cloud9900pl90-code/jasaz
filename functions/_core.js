@@ -300,11 +300,155 @@ export async function deployWorker({ accountId, apiToken, workerName, scriptUrl,
 
   return {
     success: true,
+    deployTarget: 'workers',
     workerName,
     workerUrl,
     d1DatabaseId,
     kvNamespaceId,
     obfuscated: !!enableObfuscation,
     recreated: !!recreateWorker,
+  };
+}
+
+// موتور استقرار مستقیم روی Cloudflare Pages
+export async function deployPages({ accountId, apiToken, projectName, scriptUrl, d1Name, bindingName, kvName, kvBindingName, enableObfuscation, recreateProject }) {
+  if (!accountId || !apiToken || !projectName || !scriptUrl) {
+    throw new Error("فیلدهای اجباری برای Pages ناقص هستند.");
+  }
+
+  const cfHeaders = { Authorization: `Bearer ${apiToken}` };
+
+  // ۱. دانلود سورس کد
+  const scriptRes = await fetch(scriptUrl, {
+    headers: { "User-Agent": "Mozilla/5.0 PagesDeployer/1.0" },
+  });
+  if (!scriptRes.ok) {
+    throw new Error(`خطا در دانلود سورس: ${scriptRes.status} ${scriptRes.statusText}`);
+  }
+  let workerScript = await scriptRes.text();
+
+  if (enableObfuscation) {
+    workerScript = obfuscateWorkerCode(workerScript);
+  }
+
+  let d1DatabaseId = null;
+  let kvNamespaceId = null;
+
+  // ۲. مدیریت D1 در صورت نیاز
+  if (d1Name && bindingName) {
+    const listRes = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/d1/database`, { headers: cfHeaders });
+    const listData = await listRes.json();
+    const existingDb = listData.result?.find((db) => db.name === d1Name);
+
+    if (existingDb) {
+      d1DatabaseId = existingDb.uuid;
+    } else {
+      const d1Res = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/d1/database`, {
+        method: "POST",
+        headers: { ...cfHeaders, "Content-Type": "application/json" },
+        body: JSON.stringify({ name: d1Name }),
+      });
+      const d1Data = await d1Res.json();
+      if (!d1Data.success) throw new Error(`خطا در ایجاد D1: ${JSON.stringify(d1Data.errors)}`);
+      d1DatabaseId = d1Data.result.uuid;
+    }
+  }
+
+  // ۳. مدیریت KV در صورت نیاز
+  if (kvName && kvBindingName) {
+    const kvListRes = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/storage/kv/namespaces`, { headers: cfHeaders });
+    const kvListData = await kvListRes.json();
+    const existingKv = kvListData.result?.find((ns) => ns.title === kvName);
+
+    if (existingKv) {
+      kvNamespaceId = existingKv.id;
+    } else {
+      const createKvRes = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/storage/kv/namespaces`, {
+        method: "POST",
+        headers: { ...cfHeaders, "Content-Type": "application/json" },
+        body: JSON.stringify({ title: kvName }),
+      });
+      const createKvData = await createKvRes.json();
+      if (!createKvData.success) throw new Error(`خطا در ایجاد KV: ${JSON.stringify(createKvData.errors)}`);
+      kvNamespaceId = createKvData.result.id;
+    }
+  }
+
+  // ۴. حذف در صورت Recreate
+  if (recreateProject) {
+    try {
+      await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/pages/projects/${projectName}`, {
+        method: "DELETE",
+        headers: cfHeaders,
+      });
+    } catch (_) {}
+  }
+
+  // ۵. ایجاد پروژه Pages در صورت عدم وجود
+  const projCheck = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/pages/projects/${projectName}`, { headers: cfHeaders });
+  if (projCheck.status === 404) {
+    const createProjRes = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/pages/projects`, {
+      method: "POST",
+      headers: { ...cfHeaders, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: projectName,
+        production_branch: "main",
+      }),
+    });
+    const createProjData = await createProjRes.json();
+    if (!createProjData.success) {
+      throw new Error(`خطا در ایجاد پروژه Pages: ${JSON.stringify(createProjData.errors)}`);
+    }
+  }
+
+  // ۶. اعمال بایندینگ‌های D1 و KV روی پروداکشن پروژه Pages
+  const deploymentConfigs = {
+    env_vars: {},
+    d1_databases: d1DatabaseId ? { [bindingName]: { id: d1DatabaseId } } : {},
+    kv_namespaces: kvNamespaceId ? { [kvBindingName]: { namespace_id: kvNamespaceId } } : {},
+  };
+
+  await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/pages/projects/${projectName}`, {
+    method: "PATCH",
+    headers: { ...cfHeaders, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      deployment_configs: {
+        production: deploymentConfigs,
+      },
+    }),
+  });
+
+  // ۷. دیپلوی مستقیم فایل _worker.js روی Cloudflare Pages
+  const formData = new FormData();
+  formData.append(
+    "manifest",
+    JSON.stringify({
+      "/_worker.js": "worker",
+    })
+  );
+  formData.append("worker", new Blob([workerScript], { type: "application/javascript" }), "_worker.js");
+
+  const deployRes = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/pages/projects/${projectName}/deployments`, {
+    method: "POST",
+    headers: cfHeaders,
+    body: formData,
+  });
+
+  const deployData = await deployRes.json();
+  if (!deployData.success) {
+    throw new Error(`خطا در دیپلوی Pages: ${JSON.stringify(deployData.errors)}`);
+  }
+
+  const pagesUrl = `https://${projectName}.pages.dev`;
+
+  return {
+    success: true,
+    deployTarget: 'pages',
+    workerName: projectName,
+    workerUrl: pagesUrl,
+    d1DatabaseId,
+    kvNamespaceId,
+    obfuscated: !!enableObfuscation,
+    recreated: !!recreateProject,
   };
 }

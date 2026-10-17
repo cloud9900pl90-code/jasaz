@@ -102,7 +102,28 @@
 
       <!-- مرحله ۲ -->
       <div id="step-2" class="space-y-4 hidden">
-        <h2 class="text-md font-semibold text-slate-200">گام ۲: تنظیمات سورس و نام ورکر</h2>
+        <h2 class="text-md font-semibold text-slate-200">گام ۲: بستر استقرار، تنظیمات سورس و نام پروژه</h2>
+
+        <!-- انتخاب پلتفرم استقرار -->
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1.5">بستر استقرار در کلودفلر (Platform Target):</label>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-800 bg-slate-950 cursor-pointer hover:border-orange-500/60 transition">
+              <input type="radio" name="deployTarget" value="workers" checked class="text-orange-500 focus:ring-0">
+              <div class="flex flex-col">
+                <span class="text-xs font-bold text-slate-200">Cloudflare Workers</span>
+                <span class="text-[10px] text-slate-500">سرویس سریع لبه (*.workers.dev)</span>
+              </div>
+            </label>
+            <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-800 bg-slate-950 cursor-pointer hover:border-orange-500/60 transition">
+              <input type="radio" name="deployTarget" value="pages" class="text-orange-500 focus:ring-0">
+              <div class="flex flex-col">
+                <span class="text-xs font-bold text-slate-200">Cloudflare Pages</span>
+                <span class="text-[10px] text-slate-500">میزبانی پروژه (*.pages.dev)</span>
+              </div>
+            </label>
+          </div>
+        </div>
 
         <!-- انتخاب الگوی آماده (Preset Selector) -->
         <div>
@@ -849,7 +870,9 @@
       prevBtn.disabled = true;
       submitBtn.classList.add('opacity-50');
 
+      const deployTargetEl = document.querySelector('input[name="deployTarget"]:checked');
       const payload = {
+        deployTarget: deployTargetEl ? deployTargetEl.value : 'workers',
         accountId: document.getElementById('accountId').value.trim(),
         apiToken: document.getElementById('apiToken').value.trim(),
         workerName: document.getElementById('workerName').value.trim(),
