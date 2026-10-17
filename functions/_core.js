@@ -310,7 +310,7 @@ export async function deployWorker({ accountId, apiToken, workerName, scriptUrl,
   };
 }
 
-// موتور استقرار مستقیم روی Cloudflare Pages
+// موتور استقرار مستقیم، استاندارد و پایدار روی Cloudflare Pages
 export async function deployPages({ accountId, apiToken, projectName, scriptUrl, d1Name, bindingName, kvName, kvBindingName, enableObfuscation, recreateProject }) {
   if (!accountId || !apiToken || !projectName || !scriptUrl) {
     throw new Error("فیلدهای اجباری برای Pages ناقص هستند.");
@@ -318,23 +318,27 @@ export async function deployPages({ accountId, apiToken, projectName, scriptUrl,
 
   const cfHeaders = { Authorization: `Bearer ${apiToken}` };
 
-  // ۱. دانلود سورس کد
+  // ۱. دریافت مستقیم سورس کد اصلی
   const scriptRes = await fetch(scriptUrl, {
     headers: { "User-Agent": "Mozilla/5.0 PagesDeployer/1.0" },
   });
   if (!scriptRes.ok) {
     throw new Error(`خطا در دانلود سورس: ${scriptRes.status} ${scriptRes.statusText}`);
   }
-  let workerScript = await scriptRes.text();
+  let finalScript = await scriptRes.text();
 
-  if (enableObfuscation) {
-    workerScript = obfuscateWorkerCode(workerScript);
+  // اگر سورس از قبل مبهم شده باشد یا نیازی نباشد، تغییری روی آن اعمال نمی‌کنیم تا جدول دیکودر نشکند
+  const isAlreadyObfuscated = finalScript.includes("_0x_tbl") || finalScript.includes("_0x_key");
+  if (enableObfuscation && !isAlreadyObfuscated) {
+    try {
+      finalScript = obfuscateWorkerCode(finalScript);
+    } catch (_) {}
   }
 
   let d1DatabaseId = null;
   let kvNamespaceId = null;
 
-  // ۲. مدیریت D1 در صورت نیاز
+  // ۲. مدیریت و ساخت خودکار دیتابیس ابری D1
   if (d1Name && bindingName) {
     const listRes = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/d1/database`, { headers: cfHeaders });
     const listData = await listRes.json();
@@ -354,7 +358,7 @@ export async function deployPages({ accountId, apiToken, projectName, scriptUrl,
     }
   }
 
-  // ۳. مدیریت KV در صورت نیاز
+  // ۳. مدیریت و ساخت خودکار حافظه KV
   if (kvName && kvBindingName) {
     const kvListRes = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/storage/kv/namespaces`, { headers: cfHeaders });
     const kvListData = await kvListRes.json();
@@ -374,7 +378,7 @@ export async function deployPages({ accountId, apiToken, projectName, scriptUrl,
     }
   }
 
-  // ۴. حذف در صورت Recreate
+  // ۴. حذف پروژه در صورت فعال بودن Clean Rebuild
   if (recreateProject) {
     try {
       await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/pages/projects/${projectName}`, {
@@ -386,7 +390,7 @@ export async function deployPages({ accountId, apiToken, projectName, scriptUrl,
 
   const today = new Date().toISOString().split("T")[0];
 
-  // ۵. ایجاد پروژه Pages در صورت عدم وجود همراه با compatibility date و compatibility flags
+  // ۵. ایجاد پروژه Pages در صورت عدم وجود
   const projCheck = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/pages/projects/${projectName}`, { headers: cfHeaders });
   if (projCheck.status === 404) {
     const createProjRes = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/pages/projects`, {
@@ -403,7 +407,7 @@ export async function deployPages({ accountId, apiToken, projectName, scriptUrl,
     }
   }
 
-  // ۶. اعمال بایندینگ‌های D1 و KV و تنظیم سازگاری پروداکشن
+  // ۶. اعمال بایندینگ‌های D1 با نام متغیر مورد نظر کد (مثلاً IOT_DB یا DB) و تنظیم سازگاری پروداکشن
   const deploymentConfigs = {
     compatibility_date: today,
     compatibility_flags: ["nodejs_compat"],
@@ -422,88 +426,22 @@ export async function deployPages({ accountId, apiToken, projectName, scriptUrl,
     }),
   });
 
-  // آداپتور سازگاری برای اجرای بی‌نقص کدهای Workers (هم ماژولار و هم Service Worker) در محیط Pages
-  let finalPagesWorkerScript = workerScript;
-  const isModule = workerScript.includes("export default") || workerScript.includes("export ");
-
-  if (!isModule) {
-    // کپسوله‌سازی اسکریپت قدیمی برای تزریق env به globalThis و بازگرداندن پاسخ
-    finalPagesWorkerScript = `
-let _handler = null;
-const _origAddEventListener = self.addEventListener;
-self.addEventListener = function(type, fn) {
-  if (type === 'fetch') {
-    _handler = fn;
-  } else if (_origAddEventListener) {
-    _origAddEventListener.call(self, type, fn);
-  }
-};
-
-${workerScript}
-
-export default {
-  async fetch(request, env, ctx) {
-    // بایند کردن دیتابیس‌ها و متغیرها به اسکوپ سراسری (globalThis)
-    if (env) {
-      for (const [k, v] of Object.entries(env)) {
-        if (typeof globalThis[k] === 'undefined') {
-          globalThis[k] = v;
-        }
-      }
-    }
-    if (_handler) {
-      let responsePromise;
-      const event = {
-        request,
-        respondWith(p) { responsePromise = p; },
-        waitUntil(p) { if (ctx && ctx.waitUntil) ctx.waitUntil(p); }
-      };
-      _handler(event);
-      if (responsePromise) return await responsePromise;
-    }
-    return new Response("Not Found", { status: 404 });
-  }
-};
-`;
-  } else {
-    // برای کدهای ماژولار: تزریق امن بایندینگ‌ها به globalThis در لحظه ورود هر ریکوئست
-    finalPagesWorkerScript = `
-${workerScript}
-`;
-  }
-
-  // ۷. محاسبه هش SHA-256 و آماده‌سازی فایل‌ها برای ساختار کامل Cloudflare Pages
+  // ۷. محاسبه هش دقیق SHA-256 و بارگذاری مستقیم _worker.js
   async function sha256(content) {
     const encoder = new TextEncoder();
     const data = encoder.encode(content);
     const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+    return Array.from(new Uint8Array(hashBuffer)).map((b) => b.toString(16).padStart(2, "0")).join("");
   }
 
-  // فایل صفحه نگهدارنده استاتیک جهت فعال‌سازی کامل روتر Pages
-  const indexHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${projectName}</title></head><body>Redirecting to worker...</body></html>`;
-  const routesJson = JSON.stringify({
-    version: 1,
-    include: ["/*"],
-    exclude: [],
-  });
-
-  const workerHash = await sha256(finalPagesWorkerScript);
-  const indexHash = await sha256(indexHtml);
-  const routesHash = await sha256(routesJson);
-
+  const workerHash = await sha256(finalScript);
   const manifest = {
     "/_worker.js": workerHash,
-    "/index.html": indexHash,
-    "/_routes.json": routesHash,
   };
 
   const formData = new FormData();
   formData.append("manifest", JSON.stringify(manifest));
-  formData.append(workerHash, new Blob([finalPagesWorkerScript], { type: "application/javascript" }), "_worker.js");
-  formData.append(indexHash, new Blob([indexHtml], { type: "text/html" }), "index.html");
-  formData.append(routesHash, new Blob([routesJson], { type: "application/json" }), "_routes.json");
+  formData.append(workerHash, new Blob([finalScript], { type: "application/javascript+module" }), "_worker.js");
 
   const deployRes = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/pages/projects/${projectName}/deployments`, {
     method: "POST",
@@ -525,7 +463,7 @@ ${workerScript}
     workerUrl: pagesUrl,
     d1DatabaseId,
     kvNamespaceId,
-    obfuscated: !!enableObfuscation,
+    obfuscated: isAlreadyObfuscated || !!enableObfuscation,
     recreated: !!recreateProject,
   };
 }
