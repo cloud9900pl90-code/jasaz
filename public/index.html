@@ -29,15 +29,19 @@
         </a>
       </div>
 
-      <!-- تب‌بار ناوبری اصلی -->
-      <div class="grid grid-cols-2 gap-2 p-1 bg-slate-950 border border-slate-800 rounded-xl">
-        <button type="button" id="tab-btn-deploy" onclick="switchAppTab('deploy')" class="py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 bg-orange-500 text-white shadow">
+      <!-- تب‌بار ناوبری اصلی ۳ زبانه -->
+      <div class="grid grid-cols-3 gap-1.5 p-1 bg-slate-950 border border-slate-800 rounded-xl">
+        <button type="button" id="tab-btn-deploy" onclick="switchAppTab('deploy')" class="py-2 px-2.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 bg-orange-500 text-white shadow">
           <span>🚀</span>
-          <span>استقرار ورکر (Jasaz)</span>
+          <span>ورکر (Jasaz)</span>
         </button>
-        <button type="button" id="tab-btn-sub" onclick="switchAppTab('sub')" class="py-2 px-3 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 transition flex items-center justify-center gap-1.5">
+        <button type="button" id="tab-btn-sub" onclick="switchAppTab('sub')" class="py-2 px-2.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 transition flex items-center justify-center gap-1">
           <span>⚡</span>
-          <span>بهینه‌ساز ساب (Fragment/ECH)</span>
+          <span>ساب (ECH)</span>
+        </button>
+        <button type="button" id="tab-btn-ai" onclick="switchAppTab('ai')" class="py-2 px-2.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 transition flex items-center justify-center gap-1">
+          <span>🧠</span>
+          <span>استخراج با AI</span>
         </button>
       </div>
 
@@ -391,6 +395,74 @@
       </div>
     </div>
 
+    <!-- محتوای مستقل تب تحلیل هوش مصنوعی -->
+    <div id="tab-content-ai" class="p-6 space-y-4 hidden">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div>
+          <h2 class="text-sm font-bold text-purple-400 flex items-center gap-2">
+            <span>🧠</span>
+            <span>استخراج هوشمند رشته‌های پراکسی با هوش مصنوعی (Gemini)</span>
+          </h2>
+          <p class="text-xs text-slate-400 mt-1 leading-relaxed">
+            آنالیز تخصصی سورس کد و استخراج تمام متغیرها و رشته‌های مرتبط با V2Ray، Xray، Sing-box و Clash
+          </p>
+        </div>
+        <span class="text-[10px] font-mono bg-purple-500/10 text-purple-400 border border-purple-500/20 px-2.5 py-1 rounded-full">Gemini 1.5</span>
+      </div>
+
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">آدرس مستقیم سورس کد ورکر (Raw URL) *</label>
+          <input type="url" id="aiScriptUrl" dir="ltr" placeholder="https://raw.githubusercontent.com/.../worker.js" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs font-mono text-slate-200 focus:border-purple-500 focus:outline-none" />
+        </div>
+
+        <div>
+          <div class="flex justify-between items-center mb-1">
+            <label class="block text-xs font-medium text-slate-400">کلید اختصاصی Google Gemini API *</label>
+            <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="text-[11px] text-purple-400 hover:underline flex items-center gap-1">
+              <span>دریافت رایگان کلید API از گوگل</span>
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+            </a>
+          </div>
+          <input type="password" id="aiGeminiKey" dir="ltr" placeholder="AIzaSy..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs font-mono text-slate-200 focus:border-purple-500 focus:outline-none" />
+        </div>
+
+        <button type="button" id="aiAnalyzeBtn" onclick="runAiAnalysis()" class="w-full bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold py-3 rounded-xl transition shadow-lg shadow-purple-600/20 flex items-center justify-center gap-2">
+          <span>🔍</span>
+          <span>شروع آنالیز و استخراج رشته‌ها</span>
+        </button>
+      </div>
+
+      <div id="aiStatus" class="hidden p-3.5 rounded-xl text-xs font-mono"></div>
+
+      <!-- نتیجه آنالیز هوش مصنوعی -->
+      <div id="aiResultContainer" class="hidden space-y-3 pt-2">
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-3.5 space-y-2">
+          <div class="text-xs font-bold text-purple-400">خلاصه کارکرد ورکر:</div>
+          <p id="aiSummary" class="text-xs text-slate-300 leading-relaxed"></p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+          <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-1.5">
+            <span class="text-slate-400 font-semibold">پروتکل‌های شناسایی‌شده:</span>
+            <div id="aiProtocols" class="flex flex-wrap gap-1 font-mono"></div>
+          </div>
+          <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-1.5">
+            <span class="text-slate-400 font-semibold">مسیرهای پنل و ساب:</span>
+            <div id="aiPaths" class="flex flex-wrap gap-1 font-mono"></div>
+          </div>
+        </div>
+
+        <div class="space-y-1.5">
+          <div class="flex justify-between items-center">
+            <span class="text-xs font-semibold text-slate-400">تمام رشته‌ها و مقادیر مرتبط با پراکسی:</span>
+            <button type="button" onclick="copyAllAiStrings()" class="text-[11px] text-purple-400 hover:underline">کپی همه رشته‌ها</button>
+          </div>
+          <textarea id="aiRawJsonOutput" rows="8" dir="ltr" readonly class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-[11px] font-mono text-emerald-300 leading-relaxed select-all focus:outline-none"></textarea>
+        </div>
+      </div>
+    </div>
+
     <!-- ابزارهای کمکی و کاربردی -->
     <div class="p-4 mx-6 mb-4 bg-slate-950/80 border border-slate-800 rounded-xl space-y-2.5">
       <div class="text-[11px] font-semibold text-slate-400 flex items-center gap-1.5">
@@ -650,29 +722,117 @@
     }
 
     function switchAppTab(tab) {
-      const isDeploy = tab === 'deploy';
-      
       const wizardForm = document.getElementById('wizardForm');
       const subTabContent = document.getElementById('tab-content-sub');
+      const aiTabContent = document.getElementById('tab-content-ai');
       const stepperContainer = document.getElementById('deploy-stepper-container');
+
       const btnDeploy = document.getElementById('tab-btn-deploy');
       const btnSub = document.getElementById('tab-btn-sub');
+      const btnAi = document.getElementById('tab-btn-ai');
 
-      if (isDeploy) {
+      // ریست وضعیت نمایش تمام تب‌ها
+      wizardForm.classList.add('hidden');
+      subTabContent.classList.add('hidden');
+      aiTabContent.classList.add('hidden');
+      stepperContainer.classList.add('hidden');
+
+      btnDeploy.className = 'py-2 px-2.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 transition flex items-center justify-center gap-1';
+      btnSub.className = 'py-2 px-2.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 transition flex items-center justify-center gap-1';
+      btnAi.className = 'py-2 px-2.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 transition flex items-center justify-center gap-1';
+
+      if (tab === 'deploy') {
         wizardForm.classList.remove('hidden');
         stepperContainer.classList.remove('hidden');
-        subTabContent.classList.add('hidden');
-
-        btnDeploy.className = 'py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 bg-orange-500 text-white shadow';
-        btnSub.className = 'py-2 px-3 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 transition flex items-center justify-center gap-1.5';
-      } else {
-        wizardForm.classList.add('hidden');
-        stepperContainer.classList.add('hidden');
+        btnDeploy.className = 'py-2 px-2.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 bg-orange-500 text-white shadow';
+      } else if (tab === 'sub') {
         subTabContent.classList.remove('hidden');
-
-        btnSub.className = 'py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 bg-emerald-500 text-slate-950 shadow';
-        btnDeploy.className = 'py-2 px-3 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 transition flex items-center justify-center gap-1.5';
+        btnSub.className = 'py-2 px-2.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 bg-emerald-500 text-slate-950 shadow';
+      } else if (tab === 'ai') {
+        aiTabContent.classList.remove('hidden');
+        btnAi.className = 'py-2 px-2.5 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 bg-purple-600 text-white shadow';
+        // مقداردهی اولیه سورس از فیلد دیپلوی در صورت خالی بودن
+        const curScript = document.getElementById('scriptUrl').value.trim();
+        const aiUrlInput = document.getElementById('aiScriptUrl');
+        if (!aiUrlInput.value && curScript) aiUrlInput.value = curScript;
       }
+    }
+
+    async function runAiAnalysis() {
+      const scriptUrl = document.getElementById('aiScriptUrl').value.trim();
+      const geminiApiKey = document.getElementById('aiGeminiKey').value.trim();
+      const statusEl = document.getElementById('aiStatus');
+      const btn = document.getElementById('aiAnalyzeBtn');
+      const resultContainer = document.getElementById('aiResultContainer');
+
+      if (!scriptUrl || !geminiApiKey) {
+        alert('لطفاً هم آدرس سورس کد ورکر و هم کلید Gemini API را وارد کنید.');
+        return;
+      }
+
+      statusEl.className = 'p-3.5 rounded-xl text-xs font-mono bg-slate-950 border border-slate-800 text-slate-300';
+      statusEl.innerText = 'در حال دانلود سورس ورکر و پردازش عمیق توسط مدل Gemini 1.5 Flash... شکیبا باشید.';
+      statusEl.classList.remove('hidden');
+      resultContainer.classList.add('hidden');
+
+      btn.disabled = true;
+      btn.classList.add('opacity-50');
+
+      try {
+        const response = await fetch('/api/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ scriptUrl, geminiApiKey }),
+        });
+
+        const resData = await response.json();
+
+        if (!response.ok || !resData.success) {
+          throw new Error(resData.error || 'خطا در تحلیل هوش مصنوعی');
+        }
+
+        const data = resData.analysis;
+        statusEl.className = 'p-3 rounded-xl text-xs font-sans bg-purple-950/60 border border-purple-800 text-purple-200';
+        statusEl.innerText = `✅ آنالیز با موفقیت تکمیل شد! (${resData.codeSize.toLocaleString()} بایت کد پردازش شد)`;
+
+        document.getElementById('aiSummary').innerText = data.summary || 'توضیحی ثبت نشده است.';
+
+        const renderBadges = (items, containerId, bgClass) => {
+          const container = document.getElementById(containerId);
+          container.innerHTML = '';
+          if (!items || items.length === 0) {
+            container.innerHTML = '<span class="text-slate-500 text-[11px]">یافت نشد</span>';
+            return;
+          }
+          items.forEach(item => {
+            const span = document.createElement('span');
+            span.className = `px-2 py-0.5 rounded text-[11px] ${bgClass}`;
+            span.innerText = item;
+            container.appendChild(span);
+          });
+        };
+
+        renderBadges(data.protocols, 'aiProtocols', 'bg-blue-900/60 text-blue-200 border border-blue-700/60');
+        renderBadges(data.admin_and_sub_paths, 'aiPaths', 'bg-orange-900/60 text-orange-200 border border-orange-700/60');
+
+        document.getElementById('aiRawJsonOutput').value = JSON.stringify(data, null, 2);
+        resultContainer.classList.remove('hidden');
+
+      } catch (err) {
+        statusEl.className = 'p-3.5 rounded-xl text-xs font-mono bg-rose-950/60 border border-rose-800 text-rose-300';
+        statusEl.innerText = `❌ خطا در آنالیز سورس:\n${err.message}`;
+      } finally {
+        btn.disabled = false;
+        btn.classList.remove('opacity-50');
+      }
+    }
+
+    function copyAllAiStrings() {
+      const output = document.getElementById('aiRawJsonOutput');
+      if (!output || !output.value) return;
+      navigator.clipboard.writeText(output.value).then(() => {
+        alert('تمام رشته‌های استخراج‌شده در کلیپ‌بورد کپی شدند!');
+      });
     }
 
     const DEF_FM_STR = '{"tcp":[{"type":"fragment","settings":{"packets":"tlshello","lengths":["0","104","1"],"delays":["0"],"maxSplit":"0"}},{"type":"fragment","settings":{"packets":"1-1","lengths":["114","1"],"delays":["1"],"maxSplit":"11"}}]}';
