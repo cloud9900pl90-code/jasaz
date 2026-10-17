@@ -513,16 +513,49 @@
           </div>
         </div>
 
-        <!-- تمام رشته‌های تکمیلی استخراج شده (JSON خام LTR) -->
-        <div class="space-y-1.5 pt-1">
+        <!-- باکس مستقل و اختصاصی all_proxy_related_strings -->
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-3.5 space-y-2">
           <div class="flex justify-between items-center">
-            <span class="text-xs font-semibold text-slate-400">تمام رشته‌های استخراج‌شده پراکسی (Complete JSON):</span>
-            <button type="button" onclick="copyAllAiStrings()" class="text-xs bg-slate-800 hover:bg-slate-700 text-purple-300 border border-purple-800/60 px-2.5 py-1 rounded transition flex items-center gap-1">
+            <span class="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+              <span>📦</span>
+              <span>تمام رشته‌های مرتبط با پراکسی (all_proxy_related_strings):</span>
+            </span>
+            <div class="flex items-center gap-2">
+              <span id="aiAllStringsCount" class="text-[10px] font-mono text-slate-500"></span>
+              <button type="button" onclick="copyOnlyAllProxyStrings()" class="text-[11px] bg-slate-900 hover:bg-slate-800 text-purple-300 border border-purple-900/60 px-2.5 py-1 rounded-lg transition flex items-center gap-1">
+                <span>📋</span>
+                <span>کپی این لیست</span>
+              </button>
+            </div>
+          </div>
+          <div id="aiAllStringsTags" dir="ltr" class="flex flex-wrap gap-1 font-mono text-left max-h-48 overflow-y-auto p-1 bg-slate-900/40 rounded-lg border border-slate-900"></div>
+        </div>
+
+        <!-- ژنراتور پرامپت تعویض کامل رشته‌ها (Prompt Generator) -->
+        <div class="bg-slate-950 border border-purple-600/40 rounded-xl p-4 space-y-2.5">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-1.5 text-xs font-bold text-purple-400">
+              <span>🪄</span>
+              <span>پرامپت آماده هوش مصنوعی برای جایگزینی کامل رشته‌ها (Replacement Prompt):</span>
+            </div>
+            <button type="button" onclick="copyGeneratedPrompt()" id="copyPromptBtn" class="text-xs bg-purple-600 hover:bg-purple-700 text-white font-bold px-3 py-1.5 rounded-lg transition flex items-center gap-1 shadow">
               <span>📋</span>
-              <span>کپی خروجی JSON</span>
+              <span>کپی پرامپت آماده</span>
             </button>
           </div>
-          <textarea id="aiRawJsonOutput" rows="7" dir="ltr" readonly class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-[11px] font-mono text-emerald-300 leading-relaxed text-left select-all focus:outline-none"></textarea>
+          <p class="text-[11px] text-slate-400 leading-relaxed">
+            این پرامپت به صورت خودکار با لیست رشته‌های استخراج‌شده ساخته شده است. کافیست آن را کپی کرده و به همراه سورس ورکر خود به ChatGPT یا Claude بفرستید تا تمام مقادیر لو رفته را ری‌برند و استتار کند:
+          </p>
+          <textarea id="aiGeneratedPrompt" rows="6" dir="ltr" readonly class="w-full bg-slate-900/90 border border-slate-800 rounded-xl p-3 text-[11px] font-mono text-slate-300 leading-relaxed text-left select-all focus:outline-none"></textarea>
+        </div>
+
+        <!-- تمام خروجی ساختاریافته (Complete JSON Output) -->
+        <div class="space-y-1.5 pt-1">
+          <div class="flex justify-between items-center">
+            <span class="text-xs font-semibold text-slate-400">خروجی کامل آنالیز (Full Raw JSON):</span>
+            <button type="button" onclick="copyAllAiStrings()" class="text-xs text-slate-400 hover:text-white transition">کپی کل JSON</button>
+          </div>
+          <textarea id="aiRawJsonOutput" rows="5" dir="ltr" readonly class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-[11px] font-mono text-emerald-300/80 leading-relaxed text-left select-all focus:outline-none"></textarea>
         </div>
       </div>
     </div>
@@ -925,7 +958,31 @@
         renderBadges(data.keys_and_passwords, 'aiKeys', 'aiKeysCount', 'bg-rose-950 border border-rose-700/60 text-rose-300 font-bold');
         renderBadges(data.hosts_and_clean_ips, 'aiHosts', 'aiHostsCount', 'bg-emerald-950 border border-emerald-700/60 text-emerald-300');
         renderBadges(data.transport_and_network, 'aiTransport', null, 'bg-cyan-950 border border-cyan-700/60 text-cyan-300');
+        
+        // رندر باکس اختصاصی all_proxy_related_strings
+        renderBadges(data.all_proxy_related_strings, 'aiAllStringsTags', 'aiAllStringsCount', 'bg-slate-900 border border-slate-700 text-purple-300');
 
+        // تولید پرامپت مهندسی‌شده تعویض کامل رشته‌ها
+        const allStringsList = Array.isArray(data.all_proxy_related_strings) 
+          ? data.all_proxy_related_strings 
+          : [];
+
+        const generatedPromptText = `You are an expert code refactorer and software obfuscation specialist.
+I am providing you with my Cloudflare Worker proxy script along with a list of extracted proxy-related strings.
+Your task is to FULLY REPLACE, RENAME, and CAMOUFLAGE every single string from the list below in the source code.
+
+Rules:
+1. Replace proxy terminology, path names (e.g. /sub, /panel, /sync/dash), passwords, headers, protocol keywords, and variables with realistic, generic cloud services terminology (e.g. telemetry, cdn-metric, assets, healthcheck, iot-beacon).
+2. Generate fresh, realistic replacement values (e.g., new random UUIDs, new disguised path segments, randomized sub endpoints).
+3. Do NOT break the functionality or logical flow of the worker. Ensure sockets, WebSocket upgrades, and D1 database queries continue to execute seamlessly with the new mapped names.
+4. Output the complete refactored JavaScript code directly, followed by a concise mapping table showing what was replaced.
+
+Target strings to completely replace and neutralize:
+${JSON.stringify(allStringsList, null, 2)}
+
+[ATTACH YOUR WORKER SOURCE CODE BELOW THIS LINE]`;
+
+        document.getElementById('aiGeneratedPrompt').value = generatedPromptText;
         document.getElementById('aiRawJsonOutput').value = JSON.stringify(data, null, 2);
         resultContainer.classList.remove('hidden');
 
@@ -942,7 +999,27 @@
       const output = document.getElementById('aiRawJsonOutput');
       if (!output || !output.value) return;
       navigator.clipboard.writeText(output.value).then(() => {
-        alert('تمام رشته‌های استخراج‌شده در کلیپ‌بورد کپی شدند!');
+        alert('خروجی کامل JSON کپی شد!');
+      });
+    }
+
+    function copyOnlyAllProxyStrings() {
+      const tags = document.querySelectorAll('#aiAllStringsTags span');
+      const list = Array.from(tags).map(t => t.innerText);
+      if (list.length === 0) return;
+      navigator.clipboard.writeText(JSON.stringify(list, null, 2)).then(() => {
+        alert('لیست تمام رشته‌های پراکسی (all_proxy_related_strings) کپی شد!');
+      });
+    }
+
+    function copyGeneratedPrompt() {
+      const promptEl = document.getElementById('aiGeneratedPrompt');
+      const btn = document.getElementById('copyPromptBtn');
+      if (!promptEl || !promptEl.value) return;
+      navigator.clipboard.writeText(promptEl.value).then(() => {
+        const orig = btn.innerHTML;
+        btn.innerHTML = '<span>✓</span><span>کپی شد!</span>';
+        setTimeout(() => { btn.innerHTML = orig; }, 1800);
       });
     }
 
