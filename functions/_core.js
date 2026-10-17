@@ -384,7 +384,9 @@ export async function deployPages({ accountId, apiToken, projectName, scriptUrl,
     } catch (_) {}
   }
 
-  // ۵. ایجاد پروژه Pages در صورت عدم وجود
+  const today = new Date().toISOString().split("T")[0];
+
+  // ۵. ایجاد پروژه Pages در صورت عدم وجود همراه با compatibility date و compatibility flags
   const projCheck = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/pages/projects/${projectName}`, { headers: cfHeaders });
   if (projCheck.status === 404) {
     const createProjRes = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/pages/projects`, {
@@ -401,8 +403,10 @@ export async function deployPages({ accountId, apiToken, projectName, scriptUrl,
     }
   }
 
-  // ۶. اعمال بایندینگ‌های D1 و KV روی پروداکشن پروژه Pages
+  // ۶. اعمال بایندینگ‌های D1 و KV و تنظیم سازگاری پروداکشن
   const deploymentConfigs = {
+    compatibility_date: today,
+    compatibility_flags: ["nodejs_compat"],
     env_vars: {},
     d1_databases: d1DatabaseId ? { [bindingName]: { id: d1DatabaseId } } : {},
     kv_namespaces: kvNamespaceId ? { [kvBindingName]: { namespace_id: kvNamespaceId } } : {},
@@ -417,6 +421,56 @@ export async function deployPages({ accountId, apiToken, projectName, scriptUrl,
       },
     }),
   });
+
+  // آداپتور سازگاری برای اجرای بی‌نقص کدهای Workers (هم ماژولار و هم Service Worker) در محیط Pages
+  let finalPagesWorkerScript = workerScript;
+  const isModule = workerScript.includes("export default") || workerScript.includes("export ");
+
+  if (!isModule) {
+    // کپسوله‌سازی اسکریپت قدیمی برای تزریق env به globalThis و بازگرداندن پاسخ
+    finalPagesWorkerScript = `
+let _handler = null;
+const _origAddEventListener = self.addEventListener;
+self.addEventListener = function(type, fn) {
+  if (type === 'fetch') {
+    _handler = fn;
+  } else if (_origAddEventListener) {
+    _origAddEventListener.call(self, type, fn);
+  }
+};
+
+${workerScript}
+
+export default {
+  async fetch(request, env, ctx) {
+    // بایند کردن دیتابیس‌ها و متغیرها به اسکوپ سراسری (globalThis)
+    if (env) {
+      for (const [k, v] of Object.entries(env)) {
+        if (typeof globalThis[k] === 'undefined') {
+          globalThis[k] = v;
+        }
+      }
+    }
+    if (_handler) {
+      let responsePromise;
+      const event = {
+        request,
+        respondWith(p) { responsePromise = p; },
+        waitUntil(p) { if (ctx && ctx.waitUntil) ctx.waitUntil(p); }
+      };
+      _handler(event);
+      if (responsePromise) return await responsePromise;
+    }
+    return new Response("Not Found", { status: 404 });
+  }
+};
+`;
+  } else {
+    // برای کدهای ماژولار: تزریق امن بایندینگ‌ها به globalThis در لحظه ورود هر ریکوئست
+    finalPagesWorkerScript = `
+${workerScript}
+`;
+  }
 
   // ۷. محاسبه هش SHA-256 و آماده‌سازی فایل‌ها برای ساختار کامل Cloudflare Pages
   async function sha256(content) {
@@ -435,7 +489,7 @@ export async function deployPages({ accountId, apiToken, projectName, scriptUrl,
     exclude: [],
   });
 
-  const workerHash = await sha256(workerScript);
+  const workerHash = await sha256(finalPagesWorkerScript);
   const indexHash = await sha256(indexHtml);
   const routesHash = await sha256(routesJson);
 
@@ -447,7 +501,7 @@ export async function deployPages({ accountId, apiToken, projectName, scriptUrl,
 
   const formData = new FormData();
   formData.append("manifest", JSON.stringify(manifest));
-  formData.append(workerHash, new Blob([workerScript], { type: "application/javascript" }), "_worker.js");
+  formData.append(workerHash, new Blob([finalPagesWorkerScript], { type: "application/javascript" }), "_worker.js");
   formData.append(indexHash, new Blob([indexHtml], { type: "text/html" }), "index.html");
   formData.append(routesHash, new Blob([routesJson], { type: "application/json" }), "_routes.json");
 
