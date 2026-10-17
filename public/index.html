@@ -435,30 +435,81 @@
 
       <div id="aiStatus" class="hidden p-3.5 rounded-xl text-xs font-mono"></div>
 
-      <!-- نتیجه آنالیز هوش مصنوعی -->
+      <!-- نتیجه مرتب و دسته‌بندی‌شده آنالیز هوش مصنوعی -->
       <div id="aiResultContainer" class="hidden space-y-3 pt-2">
-        <div class="bg-slate-950 border border-slate-800 rounded-xl p-3.5 space-y-2">
-          <div class="text-xs font-bold text-purple-400">خلاصه کارکرد ورکر:</div>
-          <p id="aiSummary" class="text-xs text-slate-300 leading-relaxed"></p>
+        <!-- کارت خلاصه عملکرد -->
+        <div class="bg-slate-950 border border-purple-900/40 rounded-xl p-3.5 space-y-1.5">
+          <div class="text-xs font-bold text-purple-400 flex items-center justify-between">
+            <span>خلاصه کارکرد و تحلیل ساختار ورکر:</span>
+            <span class="text-[10px] text-slate-500 font-mono">AI Inspection</span>
+          </div>
+          <p id="aiSummary" class="text-xs text-slate-300 leading-relaxed" dir="auto"></p>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-          <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-1.5">
-            <span class="text-slate-400 font-semibold">پروتکل‌های شناسایی‌شده:</span>
-            <div id="aiProtocols" class="flex flex-wrap gap-1 font-mono"></div>
+        <!-- کارت‌های دسته‌بندی مقادیر استخراج‌شده (کاملاً LTR و مرتب) -->
+        <div class="grid grid-cols-1 gap-2.5 text-xs">
+          <!-- پروتکل‌ها و مسیرها -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-1.5">
+              <span class="text-slate-400 font-semibold flex items-center gap-1.5">
+                <span>🛡️</span>
+                <span>پروتکل‌های شناسایی‌شده:</span>
+              </span>
+              <div id="aiProtocols" dir="ltr" class="flex flex-wrap gap-1 font-mono text-left"></div>
+            </div>
+            <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-1.5">
+              <span class="text-slate-400 font-semibold flex items-center gap-1.5">
+                <span>🌐</span>
+                <span>مسیرهای روت و پنل (Paths):</span>
+              </span>
+              <div id="aiPaths" dir="ltr" class="flex flex-wrap gap-1 font-mono text-left"></div>
+            </div>
           </div>
+
+          <!-- کلیدها، UUID و پسوردها -->
           <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-1.5">
-            <span class="text-slate-400 font-semibold">مسیرهای پنل و ساب:</span>
-            <div id="aiPaths" class="flex flex-wrap gap-1 font-mono"></div>
+            <div class="flex justify-between items-center">
+              <span class="text-slate-400 font-semibold flex items-center gap-1.5">
+                <span>🔑</span>
+                <span>کلیدها، UUID و پسوردهای پیش‌فرض:</span>
+              </span>
+              <span id="aiKeysCount" class="text-[10px] font-mono text-slate-500"></span>
+            </div>
+            <div id="aiKeys" dir="ltr" class="flex flex-wrap gap-1 font-mono text-left"></div>
+          </div>
+
+          <!-- هاست‌ها، دامنه و کلین آی‌پی‌ها -->
+          <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-1.5">
+            <div class="flex justify-between items-center">
+              <span class="text-slate-400 font-semibold flex items-center gap-1.5">
+                <span>📡</span>
+                <span>هاست‌ها، SNI و آدرس سرورها (Hosts & Clean IPs):</span>
+              </span>
+              <span id="aiHostsCount" class="text-[10px] font-mono text-slate-500"></span>
+            </div>
+            <div id="aiHosts" dir="ltr" class="flex flex-wrap gap-1 font-mono text-left max-h-36 overflow-y-auto"></div>
+          </div>
+
+          <!-- تنظیمات شبکه، Fragment و Cipher Suites -->
+          <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-1.5">
+            <span class="text-slate-400 font-semibold flex items-center gap-1.5">
+              <span>⚙️</span>
+              <span>تنظیمات شبکه و ترنسپورت (Transport / Cipher):</span>
+            </span>
+            <div id="aiTransport" dir="ltr" class="flex flex-wrap gap-1 font-mono text-left max-h-28 overflow-y-auto"></div>
           </div>
         </div>
 
-        <div class="space-y-1.5">
+        <!-- تمام رشته‌های تکمیلی استخراج شده (JSON خام LTR) -->
+        <div class="space-y-1.5 pt-1">
           <div class="flex justify-between items-center">
-            <span class="text-xs font-semibold text-slate-400">تمام رشته‌ها و مقادیر مرتبط با پراکسی:</span>
-            <button type="button" onclick="copyAllAiStrings()" class="text-[11px] text-purple-400 hover:underline">کپی همه رشته‌ها</button>
+            <span class="text-xs font-semibold text-slate-400">تمام رشته‌های استخراج‌شده پراکسی (Complete JSON):</span>
+            <button type="button" onclick="copyAllAiStrings()" class="text-xs bg-slate-800 hover:bg-slate-700 text-purple-300 border border-purple-800/60 px-2.5 py-1 rounded transition flex items-center gap-1">
+              <span>📋</span>
+              <span>کپی خروجی JSON</span>
+            </button>
           </div>
-          <textarea id="aiRawJsonOutput" rows="8" dir="ltr" readonly class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-[11px] font-mono text-emerald-300 leading-relaxed select-all focus:outline-none"></textarea>
+          <textarea id="aiRawJsonOutput" rows="7" dir="ltr" readonly class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-[11px] font-mono text-emerald-300 leading-relaxed text-left select-all focus:outline-none"></textarea>
         </div>
       </div>
     </div>
@@ -771,7 +822,7 @@
       }
 
       statusEl.className = 'p-3.5 rounded-xl text-xs font-mono bg-slate-950 border border-slate-800 text-slate-300';
-      statusEl.innerText = 'در حال دانلود سورس ورکر و پردازش عمیق توسط مدل Gemini 1.5 Flash... شکیبا باشید.';
+      statusEl.innerText = 'در حال دانلود سورس ورکر و پردازش عمیق توسط Gemini ... شکیبا باشید.';
       statusEl.classList.remove('hidden');
       resultContainer.classList.add('hidden');
 
@@ -797,23 +848,41 @@
 
         document.getElementById('aiSummary').innerText = data.summary || 'توضیحی ثبت نشده است.';
 
-        const renderBadges = (items, containerId, bgClass) => {
+        const renderBadges = (items, containerId, countId, bgClass) => {
           const container = document.getElementById(containerId);
+          if (!container) return;
           container.innerHTML = '';
+          
+          if (countId) {
+            const countEl = document.getElementById(countId);
+            if (countEl) countEl.innerText = items ? `${items.length} مورد` : '۰';
+          }
+
           if (!items || items.length === 0) {
-            container.innerHTML = '<span class="text-slate-500 text-[11px]">یافت نشد</span>';
+            container.innerHTML = '<span class="text-slate-600 text-[11px] italic">No values detected</span>';
             return;
           }
+
           items.forEach(item => {
             const span = document.createElement('span');
-            span.className = `px-2 py-0.5 rounded text-[11px] ${bgClass}`;
+            span.className = `px-2 py-0.5 rounded text-[11px] select-all cursor-pointer hover:brightness-125 transition ${bgClass}`;
             span.innerText = item;
+            span.title = 'برای کپی کلیک کنید';
+            span.onclick = () => {
+              navigator.clipboard.writeText(item);
+              const orig = span.innerText;
+              span.innerText = 'Copied!';
+              setTimeout(() => { span.innerText = orig; }, 1200);
+            };
             container.appendChild(span);
           });
         };
 
-        renderBadges(data.protocols, 'aiProtocols', 'bg-blue-900/60 text-blue-200 border border-blue-700/60');
-        renderBadges(data.admin_and_sub_paths, 'aiPaths', 'bg-orange-900/60 text-orange-200 border border-orange-700/60');
+        renderBadges(data.protocols, 'aiProtocols', null, 'bg-blue-950 border border-blue-700/60 text-blue-300');
+        renderBadges(data.admin_and_sub_paths, 'aiPaths', null, 'bg-orange-950 border border-orange-700/60 text-orange-300');
+        renderBadges(data.keys_and_passwords, 'aiKeys', 'aiKeysCount', 'bg-rose-950 border border-rose-700/60 text-rose-300 font-bold');
+        renderBadges(data.hosts_and_clean_ips, 'aiHosts', 'aiHostsCount', 'bg-emerald-950 border border-emerald-700/60 text-emerald-300');
+        renderBadges(data.transport_and_network, 'aiTransport', null, 'bg-cyan-950 border border-cyan-700/60 text-cyan-300');
 
         document.getElementById('aiRawJsonOutput').value = JSON.stringify(data, null, 2);
         resultContainer.classList.remove('hidden');
