@@ -1,0 +1,110 @@
+name: Deploy Cloudflare Pages & Setup Telegram Bot
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Wrangler
+        run: npm install -g wrangler
+
+      - name: Ensure Pages Project Exists
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          wrangler pages project create jasaz --production-branch=main || true
+
+      - name: Sync Secrets to Cloudflare Pages
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_SECRET_TOKEN: ${{ secrets.TELEGRAM_SECRET_TOKEN }}
+        run: |
+          echo "Syncing Secrets..."
+          echo "$TELEGRAM_BOT_TOKEN" | wrangler pages secret put BOT_TOKEN --project-name=jasaz
+          echo "$TELEGRAM_SECRET_TOKEN" | wrangler pages secret put BOT_SECRET --project-name=jasaz
+
+      - name: Deploy to Cloudflare Pages
+        id: pages_deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          OUTPUT=$(wrangler pages deploy public --project-name=jasaz --commit-dirty=true)
+          echo "$OUTPUT"
+
+          # ۱. استخراج دامین اصلی ثابت پروژه (jasaz.pages.dev)
+          # اگر پروژه نام دیگری داشته باشد نیز به درستی هندل می‌شود
+          PROJECT_NAME="jasaz"
+          CANONICAL_URL="https://${PROJECT_NAME}.pages.dev"
+
+          echo "Canonical URL: $CANONICAL_URL"
+          echo "pages_url=$CANONICAL_URL" >> $GITHUB_OUTPUT
+
+      - name: Auto-Register Telegram Webhook
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_SECRET_TOKEN: ${{ secrets.TELEGRAM_SECRET_TOKEN }}
+          PAGES_URL: ${{ steps.pages_deploy.outputs.pages_url }}
+        run: |
+          # ۱. اعتبارسنجی اولیه وجود سکرت
+          if [ -z "${TELEGRAM_BOT_TOKEN}" ]; then
+            echo "❌ ERROR: TELEGRAM_BOT_TOKEN secret is empty or not set in GitHub Repository Secrets!"
+            exit 1
+          fi
+
+          # ۲. پاکسازی و حذف کلمه اضافی 'bot' در صورتی که اشتباها وارد شده باشد
+          CLEAN_TOKEN=$(echo -n "${TELEGRAM_BOT_TOKEN}" | tr -d '[:space:]' | sed -e 's/^bot//')
+          CLEAN_SECRET=$(echo -n "${TELEGRAM_SECRET_TOKEN}" | tr -d '[:space:]')
+          
+          # بررسی فرمت استاندارد توکن تلگرام (مثال: 123456789:ABCdefGhI...)
+          echo "Token format check: Length is ${#CLEAN_TOKEN} characters."
+
+          # ۳. تست سلامت توکن با متد getMe
+          echo "Testing Bot Token with getMe..."
+          ME_RESPONSE=$(curl -s "https://api.telegram.org/bot${CLEAN_TOKEN}/getMe")
+          echo "getMe Response: $ME_RESPONSE"
+
+          if ! echo "$ME_RESPONSE" | grep -q '"ok":true'; then
+            echo "❌ The provided TELEGRAM_BOT_TOKEN is invalid or revoked by BotFather!"
+            exit 1
+          fi
+
+          # ۴. ثبت وب‌هوک
+          WEBHOOK_URL="${PAGES_URL}/api/telegram-bot"
+          echo "Registering Webhook on: $WEBHOOK_URL"
+
+          RESPONSE=$(curl -s -X POST "https://api.telegram.org/bot${CLEAN_TOKEN}/setWebhook" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"url\": \"${WEBHOOK_URL}\",
+              \"secret_token\": \"${CLEAN_SECRET}\",
+              \"drop_pending_updates\": false
+            }")
+
+          echo "setWebhook Response: $RESPONSE"
+
+          if echo "$RESPONSE" | grep -q '"ok":true'; then
+            echo "✅ Telegram Webhook registered successfully!"
+          else
+            echo "❌ Failed to register Telegram Webhook!"
+            exit 1
+          fi
